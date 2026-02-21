@@ -1,0 +1,32 @@
+==115575== Memcheck, a memory error detector
+==115575== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==115575== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==115575== Command: ./server
+==115575== Parent PID: 113169
+==115575== 
+==115575== 
+==115575== Process terminating with default action of signal 2 (SIGINT)
+==115575==    at 0x4993834: accept (accept.c:26)
+==115575==    by 0x1097B4: main (server.c:69)
+==115575== 
+==115575== HEAP SUMMARY:
+==115575==     in use at exit: 48 bytes in 2 blocks
+==115575==   total heap usage: 2 allocs, 0 frees, 48 bytes allocated
+==115575== 
+==115575== 24 bytes in 1 blocks are still reachable in loss record 1 of 2
+==115575==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==115575==    by 0x10975F: main (server.c:58)
+==115575== 
+==115575== 24 bytes in 1 blocks are still reachable in loss record 2 of 2
+==115575==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==115575==    by 0x10977F: main (server.c:62)
+==115575== 
+==115575== LEAK SUMMARY:
+==115575==    definitely lost: 0 bytes in 0 blocks
+==115575==    indirectly lost: 0 bytes in 0 blocks
+==115575==      possibly lost: 0 bytes in 0 blocks
+==115575==    still reachable: 48 bytes in 2 blocks
+==115575==         suppressed: 0 bytes in 0 blocks
+==115575== 
+==115575== For lists of detected and suppressed errors, rerun with: -s
+==115575== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
