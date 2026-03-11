@@ -233,20 +233,23 @@ void send_chatroom_list(ChatRoomList* chatroom_list, int sockid) {
     free(chatroom_list_send);
 }
 
-void room_method_message(recieved_message* a, user* temp, thread_arg* curr_user, int type_of_message, void* data, int size, thread_arg* threadArg) {
+void room_method_message(thread_arg* curr_user, int type_of_message, void* data, int size, thread_arg* threadArg) {
+    recieved_message a = {0};
+
+    recv_exact_msg(&a, sizeof(recieved_message), curr_user->curr->sockid);
 
     message_s_group *message_to_send_group = (message_s_group*)(data); // copy recieved data into this struct
     user_map* t_map = curr_user->user_Map;
 
-    a->size_m = ntohl(a->size_m);
-    a->size_u = ntohl(a->size_u);
+    a.size_m = ntohl(a.size_m);
+    a.size_u = ntohl(a.size_u);
 
-    strncpy(message_to_send_group->arr, a->arr, a->size_m);
-    strncpy(message_to_send_group->groupName, a->user_to_send, a->size_u);
+    strncpy(message_to_send_group->arr, a.arr, a.size_m);
+    strncpy(message_to_send_group->groupName, a.user_to_send, a.size_u);
     strncpy(message_to_send_group->username, curr_user->curr->username, username_length);
 
-    message_to_send_group->username[a->size_u] = '\0';
-    message_to_send_group->arr[a->size_m] = '\0';
+    message_to_send_group->username[a.size_u] = '\0';
+    message_to_send_group->arr[a.size_m] = '\0';
 
     for(size_t i = 0; i < MAXUSERS; i++) {
         if(t_map->m_userArr[i] == NULL) {continue;}
@@ -262,7 +265,7 @@ void room_method_message(recieved_message* a, user* temp, thread_arg* curr_user,
 
 }
 
-void room_method_creation(user* temp, thread_arg* curr_user, int type_of_message, void* data, int size) {
+void room_method_creation(thread_arg* curr_user, int type_of_message, void* data, int size) {
     data = (char*)data;
     user_map* t_map = curr_user->user_Map;
 
@@ -275,6 +278,8 @@ void room_method_creation(user* temp, thread_arg* curr_user, int type_of_message
 
         send(t_map->m_userArr[i]->sockid, data, size, 0);
     }
+
+    free(data);
 }
 
 //username is the user who is sending message
@@ -394,6 +399,17 @@ void send_file_group(thread_arg* arg) {
     free(png.arr);
 }
 
+void handle_room_creation(thread_arg* curr_user, int current_user_socket) {
+    ChatRoom* newRoom = malloc(sizeof(ChatRoom));
+    recv_exact_username(newRoom->ChatRoomName, 50, current_user_socket);
+
+    pthread_mutex_lock(curr_user->mutex);
+    insert_ChatRoom(curr_user->ChatRoom_list, newRoom);
+    pthread_mutex_unlock(curr_user->mutex);
+                
+    room_method_creation(curr_user, ROOM_CREATE, newRoom->ChatRoomName, 50);
+}
+
 void *create_connection(void *arg) {
         int n;
         MsgHeader hdr;
@@ -430,24 +446,11 @@ void *create_connection(void *arg) {
             }
 
             else if(type == ROOM_CREATE) {
-                ChatRoom* newRoom = malloc(sizeof(ChatRoom));
-
-                //since username is same size as chatroom name, we can simply use this function again
-                recv_exact_username(newRoom->ChatRoomName, 50, current_user_socket);
-
-                pthread_mutex_lock(curr_user->mutex);
-                insert_ChatRoom(curr_user->ChatRoom_list, newRoom);
-                pthread_mutex_unlock(curr_user->mutex);
-                
-                room_method_creation(curr_user->list_of_users->head, curr_user, ROOM_CREATE, newRoom->ChatRoomName, 50);
+                handle_room_creation(curr_user, current_user_socket);
             }
 
             else if(type == ROOM_MSG) {
-                recieved_message a = {0};
-
-                recv_exact_msg(&a, sizeof(recieved_message), current_user_socket);
-                
-                room_method_message(&a, curr_user->list_of_users->head, curr_user, ROOM_MSG, message_to_send_group, 228, curr_user);
+                room_method_message(curr_user, ROOM_MSG, message_to_send_group, 228, curr_user);
             }
             else if(type == PNG_SEND) {
                 send_file(curr_user);
