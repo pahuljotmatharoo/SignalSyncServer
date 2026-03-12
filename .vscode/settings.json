@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "types.h": "c",
+        "data_structures.h": "c",
+        "thread.h": "c",
+        "user.h": "c",
+        "user_list.h": "c",
+        "messages.h": "c",
+        "socket.h": "c",
+        "stdlib.h": "c"
+    }
+}

@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "thread_functions.h"
-#include "messages.h"
+#include "../messages/messages.h"
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
@@ -15,7 +15,7 @@
 #define ROOM_CREATE 5
 #define ROOM_MSG 6
 #define ROOM_LIST 7
-#define PNG_SEND 8
+#define FILE_SEND 8
 #define FILE_GROUP 9
 #define username_length 50
 #define message_length 128
@@ -116,7 +116,7 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
         return;
     }
 
-    int type_of_message = PNG_SEND;
+    int type_of_message = FILE_SEND;
     send(threadArg->user_Map->m_userArr[index]->sockid, &type_of_message, sizeof(type_of_message), 0);
 
     sendSize(msg->size_m,  threadArg, index);
@@ -452,7 +452,7 @@ void *create_connection(void *arg) {
             else if(type == ROOM_MSG) {
                 room_method_message(curr_user, ROOM_MSG, message_to_send_group, 228, curr_user);
             }
-            else if(type == PNG_SEND) {
+            else if(type == FILE_SEND) {
                 send_file(curr_user);
             }
             else if(type == FILE_GROUP) {

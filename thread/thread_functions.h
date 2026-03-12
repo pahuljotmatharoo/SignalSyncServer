@@ -1,10 +1,10 @@
 #ifndef THREAD_FUNCTIONS_H
 #define THREAD_FUNCTIONS_H
 
-#include "user.h"
-#include "user_list.h"
-#include "chat_room_list.h"
-#include "messages.h"
+#include "../user/user.h"
+#include "../user/user_list.h"
+#include "../chatroom/chat_room_list.h"
+#include "../messages/messages.h"
 
 typedef struct thread_arg {
     user*      curr;

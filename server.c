@@ -6,10 +6,10 @@
 #include <netdb.h>
 #include <unistd.h> 
 #include <string.h>
-#include "thread_functions.h"
-#include "user_list.h"
-#include "messages.h"
-#include "chat_room_list.h"
+#include "../thread/thread_functions.h"
+#include "../user/user_list.h"
+#include "../messages/messages.h"
+#include "../chatroom/chat_room_list.h"
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
