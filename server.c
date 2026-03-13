@@ -89,24 +89,23 @@ int main() {
         new_user->next = NULL;
         new_user->sockid = new_sock;
 
-        recv_exact_username(new_user->username, username_length, new_user->sockid);
+        recvExactUsername(new_user->username, username_length, new_user->sockid);
 
         thread_arg *arg = setupThreadArg(new_user);
         
-        pthread_mutex_lock(&mutex);
 
+        pthread_mutex_lock(&mutex);
         insertUser(user_Map, new_user);
 
         sendAllGroupMessages(new_user);
 
-        pthread_create(&new_user->id, NULL, create_connection, arg);
+        pthread_create(&new_user->id, NULL, createConnection, arg);
 
         pthread_detach(new_user->id);
 
         sendList(user_Map);
 
-        send_chatroom_list(ChatRoom_list, new_sock); // send list of groups only to new user
-
+        sendChatroomList(ChatRoom_list, new_sock); // send list of groups only to new user
         pthread_mutex_unlock(&mutex);
 }
 }
