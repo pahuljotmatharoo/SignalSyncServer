@@ -74,6 +74,7 @@ int main() {
     init_ChatRoom_list(ChatRoom_list);
 
     while (1) {
+        // move this into one function
         struct sockaddr_in client;
         socklen_t client_len = sizeof(client);
         int new_sock = accept(sock, (struct sockaddr*)&client, &client_len);
@@ -88,6 +89,7 @@ int main() {
         new_user->client = client;
         new_user->next = NULL;
         new_user->sockid = new_sock;
+        new_user->user_mutex = malloc(sizeof(pthread_mutex_t));
 
         recvExactUsername(new_user->username, username_length, new_user->sockid);
 

@@ -6,6 +6,7 @@
 
 typedef struct user {
     pthread_t         id;
+    pthread_mutex_t*  user_mutex;
     struct sockaddr_in client;
     struct user      *next;
     int               sockid;
