@@ -5,7 +5,7 @@
 #define MAXUSERS 10
 #define MAXGROUPS 10
 
-typedef struct user_list {
+typedef struct {
     user *head;
     user *tail;
     unsigned int   size;
@@ -16,12 +16,17 @@ typedef struct {
     unsigned int m_size;
 } user_map;
 
+typedef struct {
+    int sockid;
+    pthread_mutex_t* mutex;
+} user_info;
+
 void initUserMap(user_map* t_map);
 void destroyUserMap(user_map* t_map);
 size_t hash(char* username);
 void insertUser(user_map* t_map, user* client);
 void removeUser(user_map* t_map, user* client);
-size_t findUser(user_map* t_map, char* username);
+user_info findUser(user_map* t_map, char* username);
 
 void init_user_list(user_list *a);
 void destructor_user_list(user_list *ulist);
