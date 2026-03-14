@@ -127,19 +127,23 @@ void removeUser(user_map* t_map, user* client) {
     if(t_map->m_userArr[index] == NULL) {return;}
 }
 
-size_t findUser(user_map* t_map, char* username) {
+user_info findUser(user_map* t_map, char* username) {
     size_t index = hash(username);
+    user_info info;
+    info.sockid = 0;
+    info.mutex = NULL;
 
-    if(t_map->m_userArr[index] == NULL) {return -1;}
+    if(t_map->m_userArr[index] == NULL) {return info;}
 
     while(t_map->m_userArr[index] != NULL) {
         if(strcmp(t_map->m_userArr[index]->username, username) == 0) {
-            return index;
+            info.sockid = t_map->m_userArr[index]->sockid;
+            info.mutex = t_map->m_userArr[index]->user_mutex;
+            return info;
         }
         else {
             index++;
         }
     }
-
-    return -1;
+    return info;
 }

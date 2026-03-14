@@ -6,10 +6,10 @@
 #include <netdb.h>
 #include <unistd.h> 
 #include <string.h>
-#include "../thread/thread_functions.h"
-#include "../user/user_list.h"
-#include "../messages/messages.h"
-#include "../chatroom/chat_room_list.h"
+#include "user/user_list.h"
+#include "thread/thread_functions.h"
+#include "messages/messages.h"
+#include "chatroom/chat_room_list.h"
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
@@ -44,6 +44,7 @@ thread_arg* setupThreadArg(user* new_user) {
     arg->user_fileMutex = &user_fileMutex;
     arg->group_fileMutex = &group_fileMutex;
     arg->user_Map = user_Map;
+    return arg;
 }
 
 int main() {
