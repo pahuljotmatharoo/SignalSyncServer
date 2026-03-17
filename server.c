@@ -105,9 +105,7 @@ int main() {
         pthread_create(&new_user->id, NULL, createConnection, arg);
 
         pthread_detach(new_user->id);
-
         sendList(user_Map);
-
         sendChatroomList(ChatRoom_list, new_sock); // send list of groups only to new user
         pthread_mutex_unlock(&mutex);
 }

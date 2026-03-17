@@ -26,9 +26,9 @@ char** parseGroupString(char message[username_length + message_length]);
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid);
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
 void roomMethodMessage(thread_arg* curr_user, int type_of_message, void* data, int size, thread_arg* threadArg);
-void writeToFileUser(message_s * message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *fileMutex);
-void writeToFileGroup(message_s_group * message_to_send_group, char* username, pthread_mutex_t *group_fileMutex);
-void sendMessageUser(message_s *message_to_send, int current_user_socket, thread_arg* threadArg);
+void writeToFileUser(recieved_message* message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *fileMutex);
+void writeToFileGroup(message_s_group* message_to_send_group, char* username, pthread_mutex_t* group_fileMutex);
+void sendMessageUser(int current_user_socket, thread_arg* threadArg);
 void setupDir(char* username);
 char* setupFileStringUser(char *username, char* username_to_send);
 char* setupFileStringGroup(char* group);
@@ -36,8 +36,9 @@ void sendUserRemoval(thread_arg* threadArg);
 void sendPng(recieved_png* msg, thread_arg* threadArg);
 void sendFileUser(thread_arg* arg);
 void processFile(recieved_png* png, uint32_t png_size);
-uint32_t recvFileSize(thread_arg* arg);
+uint32_t recvSize(thread_arg* arg);
 void initFileDataStructure(recieved_png* png, uint32_t png_size);
+void sendMessage(recieved_message* message_struct, int socket_id);
 
 
 #endif /* THREAD_FUNCTIONS_H */
