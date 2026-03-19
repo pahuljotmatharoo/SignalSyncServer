@@ -127,10 +127,10 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
 }
 
 //wish we had templates in C
-void writeToFileGroup(message_s_group * message_to_send_group, char* username, pthread_mutex_t *group_fileMutex) {
+void writeToFileGroup(recieved_message* message_to_send_group, char* username, pthread_mutex_t *group_fileMutex) {
     pthread_mutex_lock(group_fileMutex);
 
-    char* filename = setupFileStringGroup(message_to_send_group->groupName); // one we are sending to
+    char* filename = setupFileStringGroup(message_to_send_group->user_to_send); // one we are sending to
 
     FILE* fp = fopen(filename, "a");
     fseek(fp, 0, SEEK_END);
@@ -234,23 +234,26 @@ void sendChatroomList(ChatRoomList* chatroom_list, int sockid) {
     free(chatroom_list_send);
 }
 
-void roomMethodMessage(thread_arg* curr_user, int type_of_message, void* data, int size, thread_arg* threadArg) {
-    recieved_message a = {0};
+void roomMethodMessage(thread_arg* curr_user) {
+    recieved_message recievedMessage = {0};
 
-    recvExactMsg(&a, sizeof(recieved_message), curr_user->curr->sockid);
+    recievedMessage.size_m = recvSize(curr_user);
+    recvExactMsg(recievedMessage.arr, recievedMessage.size_m , curr_user->curr->sockid);
+    
+    recievedMessage.size_u = recvSize(curr_user);
+    recvExactMsg(recievedMessage.user_to_send, recievedMessage.size_u , curr_user->curr->sockid);
 
-    message_s_group *message_to_send_group = (message_s_group*)(data); // copy recieved data into this struct
+    char* group = malloc(recievedMessage.size_u);
+    memcpy(group, recievedMessage.user_to_send, recievedMessage.size_u);
+    group[recievedMessage.size_u - 1] = '\0';
+
+    memcpy(recievedMessage.user_to_send, curr_user->curr->username, strlen(curr_user->curr->username));
+    recievedMessage.user_to_send[strlen(curr_user->curr->username) + 1] = '\0';
+    recievedMessage.size_u = strlen(curr_user->curr->username) + 1;
+
     user_map* t_map = curr_user->user_Map;
 
-    a.size_m = ntohl(a.size_m);
-    a.size_u = ntohl(a.size_u);
-
-    strncpy(message_to_send_group->arr, a.arr, a.size_m);
-    strncpy(message_to_send_group->groupName, a.user_to_send, a.size_u);
-    strncpy(message_to_send_group->username, curr_user->curr->username, username_length);
-
-    message_to_send_group->username[a.size_u] = '\0';
-    message_to_send_group->arr[a.size_m] = '\0';
+    int group_length = strlen(group) + 1;
 
     pthread_mutex_lock(curr_user->mutex);
     for(size_t i = 0; i < MAXUSERS; i++) {
@@ -259,13 +262,15 @@ void roomMethodMessage(thread_arg* curr_user, int type_of_message, void* data, i
         if(t_map->m_userArr[i]->id == curr_user->curr->id) {continue;}
 
         pthread_mutex_lock(t_map->m_userArr[i]->user_mutex);
-        send(t_map->m_userArr[i]->sockid, &type_of_message, sizeof(type_of_message), 0);
-        send(t_map->m_userArr[i]->sockid, message_to_send_group, size, 0);
+        sendMessage(&recievedMessage, t_map->m_userArr[i]->sockid, ROOM_MSG);
+        send(t_map->m_userArr[i]->sockid, &group_length, sizeof(int), 0);
+        send(t_map->m_userArr[i]->sockid, group, group_length, 0);
         pthread_mutex_unlock(t_map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(curr_user->mutex);
 
-    writeToFileGroup(message_to_send_group, threadArg->curr->username, threadArg->group_fileMutex);
+    free(group);
+    writeToFileGroup(&recievedMessage, curr_user->curr->username, curr_user->group_fileMutex);
 }
 
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size) {
@@ -311,14 +316,13 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) { // userna
     strncpy(recievedMessage.user_to_send, threadArg->curr->username, strlen(threadArg->curr->username) + 1);
 
     pthread_mutex_lock(info.mutex);
-    sendMessage(&recievedMessage, info.sockid);
+    sendMessage(&recievedMessage, info.sockid, MSG_SEND);
     pthread_mutex_unlock(info.mutex);
 
     printf("Sent to the new client\n");
 }
 
-void sendMessage(recieved_message* message_struct, int socket_id) {
-    int type_of_message = MSG_SEND;
+void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message) {
     send(socket_id, &type_of_message, sizeof(type_of_message), 0);
     send(socket_id, &(message_struct->size_m), sizeof(uint32_t), 0);
     send(socket_id, (message_struct->arr), message_struct->size_m, 0);
@@ -472,7 +476,7 @@ void *createConnection(void *arg) {
                 handleRoomCreation(curr_user, current_user_socket);
             }
             else if(type == ROOM_MSG) {
-                roomMethodMessage(curr_user, ROOM_MSG, message_to_send_group, 228, curr_user);
+                roomMethodMessage(curr_user);
             }
             else if(type == FILE_SEND) {
                 sendFileUser(curr_user);

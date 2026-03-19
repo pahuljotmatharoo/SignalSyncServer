@@ -96,7 +96,6 @@ int main() {
 
         thread_arg *arg = setupThreadArg(new_user);
         
-
         pthread_mutex_lock(&mutex);
         insertUser(user_Map, new_user);
 
