@@ -253,7 +253,10 @@ void roomMethodMessage(thread_arg* curr_user) {
 
     user_map* t_map = curr_user->user_Map;
 
-    int group_length = strlen(group) + 1;
+    int group_length = htonl(strlen(group) + 1);
+
+    recievedMessage.size_m = htonl(recievedMessage.size_m);
+    recievedMessage.size_u = htonl(recievedMessage.size_u);
 
     pthread_mutex_lock(curr_user->mutex);
     for(size_t i = 0; i < MAXUSERS; i++) {
@@ -264,7 +267,7 @@ void roomMethodMessage(thread_arg* curr_user) {
         pthread_mutex_lock(t_map->m_userArr[i]->user_mutex);
         sendMessage(&recievedMessage, t_map->m_userArr[i]->sockid, ROOM_MSG);
         send(t_map->m_userArr[i]->sockid, &group_length, sizeof(int), 0);
-        send(t_map->m_userArr[i]->sockid, group, group_length, 0);
+        send(t_map->m_userArr[i]->sockid, group, ntohl(group_length), 0);
         pthread_mutex_unlock(t_map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(curr_user->mutex);
@@ -314,6 +317,8 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) { // userna
     }
 
     strncpy(recievedMessage.user_to_send, threadArg->curr->username, strlen(threadArg->curr->username) + 1);
+    recievedMessage.size_m = htonl(recievedMessage.size_m);
+    recievedMessage.size_u = htonl(recievedMessage.size_u);
 
     pthread_mutex_lock(info.mutex);
     sendMessage(&recievedMessage, info.sockid, MSG_SEND);
@@ -325,9 +330,9 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) { // userna
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message) {
     send(socket_id, &type_of_message, sizeof(type_of_message), 0);
     send(socket_id, &(message_struct->size_m), sizeof(uint32_t), 0);
-    send(socket_id, (message_struct->arr), message_struct->size_m, 0);
+    send(socket_id, (message_struct->arr), ntohl(message_struct->size_m), 0);
     send(socket_id, &(message_struct->size_u), sizeof(uint32_t), 0);
-    send(socket_id, (message_struct->user_to_send), message_struct->size_u, 0);
+    send(socket_id, (message_struct->user_to_send), ntohl(message_struct->size_u), 0);
 }
 
 void setupDir(char* username) {
