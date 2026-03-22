@@ -71,7 +71,8 @@ size_t recvExactMsg(void* buf, size_t len, int sock) {
 	return total;
 }
 
-void recvExactUsername(char* temp, size_t len, int sock) {
+void recvExactUsername(char* temp, int sock) {
+    size_t len = recvSize(sock);
     size_t total = 0;
     while(total < len) {
         size_t r = recv(sock, temp+total, len - total, 0);
@@ -101,8 +102,10 @@ void sendAll(char* msg, int sockid, int size) {
     }
 }
 
-void sendUsername(char username[50], int sockid) {
-    send(sockid, username, 50, 0);
+void sendUsername(char* username, int size, int sockid) {
+    size = htonl(size);
+    send(sockid, &size, sizeof(int), 0);
+    send(sockid, username, ntohl(size), 0);
 }
 
 void sendPng(recieved_png* msg, thread_arg* threadArg) {
@@ -116,13 +119,12 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
     }
 
     int type_of_message = FILE_SEND;
-
     pthread_mutex_lock(info.mutex);
     send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
     sendSize(msg->size_m, info.sockid);
     sendAll(msg->arr, info.sockid, msg->size_m);
-    sendUsername(threadArg->curr->username, info.sockid);
-    sendUsername(msg->filename_to_send, info.sockid);
+    sendUsername(threadArg->curr->username, msg->size_u, info.sockid);
+    sendUsername(msg->filename_to_send, msg->size_f_name, info.sockid);
     pthread_mutex_unlock(info.mutex);
 }
 
@@ -237,10 +239,10 @@ void sendChatroomList(ChatRoomList* chatroom_list, int sockid) {
 void roomMethodMessage(thread_arg* curr_user) {
     recieved_message recievedMessage = {0};
 
-    recievedMessage.size_m = recvSize(curr_user);
+    recievedMessage.size_m = recvSize(curr_user->curr->sockid);
     recvExactMsg(recievedMessage.arr, recievedMessage.size_m , curr_user->curr->sockid);
     
-    recievedMessage.size_u = recvSize(curr_user);
+    recievedMessage.size_u = recvSize(curr_user->curr->sockid);
     recvExactMsg(recievedMessage.user_to_send, recievedMessage.size_u , curr_user->curr->sockid);
 
     char* group = malloc(recievedMessage.size_u);
@@ -288,7 +290,7 @@ void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, 
         
         pthread_mutex_lock(t_map->m_userArr[i]->user_mutex);
         send(t_map->m_userArr[i]->sockid, &type_of_message, sizeof(type_of_message), 0);
-        send(t_map->m_userArr[i]->sockid, data, size, 0);
+        sendUsername(data, size, t_map->m_userArr[i]->sockid);
         pthread_mutex_unlock(t_map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(curr_user->mutex);
@@ -299,10 +301,10 @@ void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, 
 void sendMessageUser(int current_user_socket, thread_arg* threadArg) { // username
     recieved_message recievedMessage;
 
-    recievedMessage.size_m = recvSize(threadArg);
+    recievedMessage.size_m = recvSize(threadArg->curr->sockid);
     recvExactMsg(recievedMessage.arr, recievedMessage.size_m , current_user_socket);
     
-    recievedMessage.size_u = recvSize(threadArg);
+    recievedMessage.size_u = recvSize(threadArg->curr->sockid);
     recvExactMsg(recievedMessage.user_to_send, recievedMessage.size_u , current_user_socket);
 
     writeToFileUser(&recievedMessage, threadArg->curr->username, recievedMessage.user_to_send, threadArg->user_fileMutex);
@@ -363,8 +365,7 @@ void sendUserRemoval(thread_arg* threadArg) {
     for(int i = 0; i < MAXUSERS; i++) {
         if(t_map->m_userArr[i] == NULL || t_map->m_userArr[i]->id == threadArg->curr->id) {continue;}
         send(t_map->m_userArr[i]->sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
-
-        send(t_map->m_userArr[i]->sockid, threadArg->curr->username, sizeof(threadArg->curr->username), 0);
+        sendUsername(threadArg->curr->username, strlen(threadArg->curr->username) + 1, t_map->m_userArr[i]->sockid);
     }
 }
 
@@ -373,9 +374,9 @@ void initFileDataStructure(recieved_png* png, uint32_t png_size) {
     memset(png->arr, 0, png_size);
 }
 
-uint32_t recvSize(thread_arg* arg) {
+uint32_t recvSize(int sockid) {
     uint32_t png_size = 0;
-    recv(arg->curr->sockid, &png_size, sizeof(uint32_t), 0);
+    recv(sockid, &png_size, sizeof(uint32_t), 0);
     return ntohl(png_size);
 }
 
@@ -386,12 +387,12 @@ void processFile(recieved_png* png, uint32_t png_size) {
 }
 
 void sendFileUser(thread_arg* arg) {
-    uint32_t png_size = recvSize(arg);
+    uint32_t png_size = recvSize(arg->curr->sockid);
     recieved_png png;
     initFileDataStructure(&png, png_size);
     recvExactMsg(png.arr, png_size, arg->curr->sockid);
-    recvExactUsername(png.user_to_send, 50, arg->curr->sockid); // user to send to
-    recvExactUsername(png.filename_to_send, 50, arg->curr->sockid); // filename
+    recvExactUsername(png.user_to_send, arg->curr->sockid); // user to send to
+    recvExactUsername(png.filename_to_send, arg->curr->sockid); // filename
     processFile(&png, png_size);
     sendPng(&png, arg);
     free(png.arr);
@@ -411,22 +412,22 @@ void sendPngGroup(recieved_png* msg, thread_arg* threadArg) {
         send(sockid, &type_of_message, sizeof(type_of_message), 0);
         sendSize(msg->size_m,  sockid);
         sendAll(msg->arr, sockid, msg->size_m);
-        sendUsername(threadArg->curr->username, sockid);
-        sendUsername(msg->filename_to_send, sockid);
-        sendUsername(msg->user_to_send, sockid);
+        sendUsername(threadArg->curr->username, strlen(threadArg->curr->username) + 1, sockid);
+        sendUsername(msg->filename_to_send, msg->size_f_name, sockid);
+        sendUsername(msg->user_to_send, msg->size_u + 1, sockid);
         pthread_mutex_unlock(threadArg->user_Map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(threadArg->mutex);
 }
 
 void sendFileGroup(thread_arg* arg) {
-    uint32_t png_size = recvSize(arg);
+    uint32_t png_size = recvSize(arg->curr->sockid);
     recieved_png png;
     initFileDataStructure(&png,png_size);
 
     recvExactMsg(png.arr, png_size, arg->curr->sockid);
-    recvExactUsername(png.user_to_send, 50, arg->curr->sockid); // user to send to
-    recvExactUsername(png.filename_to_send, 50, arg->curr->sockid); // filename
+    recvExactUsername(png.user_to_send, arg->curr->sockid); // user to send to
+    recvExactUsername(png.filename_to_send, arg->curr->sockid); // filename
     processFile(&png, png_size);
     sendPngGroup(&png, arg);
     free(png.arr);
@@ -434,13 +435,13 @@ void sendFileGroup(thread_arg* arg) {
 
 void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {
     ChatRoom* newRoom = malloc(sizeof(ChatRoom));
-    recvExactUsername(newRoom->ChatRoomName, 50, current_user_socket);
+    recvExactUsername(newRoom->ChatRoomName, current_user_socket);
 
     pthread_mutex_lock(curr_user->mutex);
     insert_ChatRoom(curr_user->ChatRoom_list, newRoom);
     pthread_mutex_unlock(curr_user->mutex);
                 
-    roomMethodCreation(curr_user, ROOM_CREATE, newRoom->ChatRoomName, 50);
+    roomMethodCreation(curr_user, ROOM_CREATE, newRoom->ChatRoomName, strlen(newRoom->ChatRoomName) + 1);
 }
 
 void *createConnection(void *arg) {

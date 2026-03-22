@@ -92,7 +92,7 @@ int main() {
         new_user->sockid = new_sock;
         new_user->user_mutex = malloc(sizeof(pthread_mutex_t));
 
-        recvExactUsername(new_user->username, username_length, new_user->sockid);
+        recvExactUsername(new_user->username, new_user->sockid);
 
         thread_arg *arg = setupThreadArg(new_user);
         

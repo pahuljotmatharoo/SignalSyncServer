@@ -17,7 +17,7 @@ typedef struct thread_arg {
 } thread_arg;
 
 size_t recvExactMsg(void* buf, size_t len, int sock);
-void recvExactUsername(char* temp, size_t len, int sock);
+void recvExactUsername(char* temp, int sock);
 void recvExactPng(char* temp, uint32_t len, int sock);
 void *createConnection(void *arg);
 void sendList(user_map* t_map);
@@ -36,7 +36,7 @@ void sendUserRemoval(thread_arg* threadArg);
 void sendPng(recieved_png* msg, thread_arg* threadArg);
 void sendFileUser(thread_arg* arg);
 void processFile(recieved_png* png, uint32_t png_size);
-uint32_t recvSize(thread_arg* arg);
+uint32_t recvSize(int sockid);
 void initFileDataStructure(recieved_png* png, uint32_t png_size);
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message);
 
