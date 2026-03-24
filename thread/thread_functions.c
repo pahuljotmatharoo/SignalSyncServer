@@ -61,7 +61,7 @@ void sendAllGroupMessages(user *new_user) {
 }
 
 size_t recvExactMsg(void* buf, size_t len, int sock) {
-	recieved_message* temp = (recieved_message*)buf;
+	char* temp = (char*)buf;
 	size_t total = 0;
 	while (total < len) {
 		size_t r = recv(sock, (temp) + total, len - total, 0);
@@ -91,6 +91,7 @@ void recvExactPng(char* temp, uint32_t len, int sock) {
 }
 
 void sendSize(int size, int sockid) {
+    size = htonl(size);
     send(sockid, &size, sizeof(int), 0);
 }
 
@@ -383,8 +384,11 @@ uint32_t recvSize(int sockid) {
 void processFile(recieved_png* png, uint32_t png_size) {
     png->user_to_send[49] = '\0';
     png->size_m = png_size;
-    png->size_u = strlen(png->user_to_send);
+    png->size_u = strlen(png->user_to_send) + 1;
+    png->size_f_name = strlen(png->filename_to_send) + 1;
 }
+
+
 
 void sendFileUser(thread_arg* arg) {
     uint32_t png_size = recvSize(arg->curr->sockid);
@@ -428,6 +432,7 @@ void sendFileGroup(thread_arg* arg) {
     recvExactMsg(png.arr, png_size, arg->curr->sockid);
     recvExactUsername(png.user_to_send, arg->curr->sockid); // user to send to
     recvExactUsername(png.filename_to_send, arg->curr->sockid); // filename
+    png.size_f_name = strlen(png.filename_to_send) + 1;
     processFile(&png, png_size);
     sendPngGroup(&png, arg);
     free(png.arr);

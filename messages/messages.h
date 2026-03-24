@@ -31,6 +31,7 @@ typedef struct {
     char filename_to_send[username_length];
     uint32_t size_m;
     uint32_t size_u;
+    uint32_t size_f_name;
 } recieved_png;
 
 typedef struct list {
