@@ -124,7 +124,7 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
     send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
     sendSize(msg->size_m, info.sockid);
     sendAll(msg->arr, info.sockid, msg->size_m);
-    sendUsername(threadArg->curr->username, msg->size_u, info.sockid);
+    sendUsername(threadArg->curr->username, msg->size_u + 1, info.sockid);
     sendUsername(msg->filename_to_send, msg->size_f_name, info.sockid);
     pthread_mutex_unlock(info.mutex);
 }
