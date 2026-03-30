@@ -17,12 +17,12 @@ typedef struct thread_arg {
 } thread_arg;
 
 size_t recvExactMsg(void* buf, size_t len, int sock);
-void recvExactUsername(char* temp, int sock);
+size_t recvExactUsername(char* temp, int sock);
 void recvExactPng(char* temp, uint32_t len, int sock);
 void *createConnection(void *arg);
 void sendList(user_map* t_map);
 void sendAllGroupMessages(user *new_user);
-char** parseGroupString(char message[username_length + message_length]);
+char** parseGroupString(char message[USERNAME_LENGTH + message_length]);
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid);
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
 void roomMethodMessage(thread_arg* curr_user);

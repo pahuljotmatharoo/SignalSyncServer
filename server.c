@@ -13,7 +13,6 @@
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
-#define username_length 50
 
 //need to add a lock per socket, so we don't write to same socket at the same time
 
@@ -91,8 +90,10 @@ int main() {
         new_user->next = NULL;
         new_user->sockid = new_sock;
         new_user->user_mutex = malloc(sizeof(pthread_mutex_t));
+        new_user->username = malloc(USERNAME_LENGTH); // temporary fix
+        uint32_t size = recvExactUsername(new_user->username, new_user->sockid);
+        new_user->username_length = size;
 
-        recvExactUsername(new_user->username, new_user->sockid);
 
         thread_arg *arg = setupThreadArg(new_user);
         
