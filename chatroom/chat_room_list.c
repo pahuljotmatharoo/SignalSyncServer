@@ -13,6 +13,7 @@ void destructor_ChatRoom_list(ChatRoomList *ulist)
     ChatRoom *cur = ulist->head;
     while (cur) {
         ChatRoom *next = cur->next;
+        free(cur->ChatRoomName);
         free(cur);             // free the ChatRoom struct
         cur = next;
     }
@@ -22,17 +23,18 @@ void destructor_ChatRoom_list(ChatRoomList *ulist)
 
 void insert_ChatRoom(ChatRoomList *a, ChatRoom *room)
 {
-    if(a->head == NULL) {
+    room->next = NULL;
+
+    if (a->head == NULL) {
         a->head = room;
         a->tail = room;
     }
-    //we insert to the end always
     else {
         a->tail->next = room;
         a->tail = room;
     }
-    a->size++;
-    return;
+
+    ++(a->size);
 }
 
 void remove_ChatRoom(ChatRoomList *a, ChatRoom *room)

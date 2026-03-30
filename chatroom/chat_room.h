@@ -6,6 +6,7 @@
 
 typedef struct ChatRoom {
     char ChatRoomName[chatroom_length];
+    uint32_t name_length;
     struct ChatRoom* next;
 } ChatRoom;
 

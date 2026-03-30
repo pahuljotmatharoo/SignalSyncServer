@@ -6,7 +6,7 @@
 typedef struct ChatRoomList {
     ChatRoom *head;
     ChatRoom *tail;
-    unsigned int size;
+    int       size;
 } ChatRoomList;
 
 void init_ChatRoom_list(ChatRoomList *a);
