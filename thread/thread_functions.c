@@ -206,8 +206,6 @@ void sendList(user_map* t_map) {
         }
     }
 
-    client_list_send->size = htonl(client_list_send->size);
-
     for(size_t i = 0; i < MAXUSERS; i++) {
         if(t_map->m_userArr[i] == NULL) {continue;}
 
@@ -215,9 +213,12 @@ void sendList(user_map* t_map) {
         int type_of_message_list = MSG_LIST;
         send(t_map->m_userArr[i]->sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
 
-        send(t_map->m_userArr[i]->sockid, client_list_send, sizeof (client_list_s), 0);
-    }
+        sendSize(client_list_send->size, t_map->m_userArr[i]->sockid);
 
+        for(int j = 0; j < client_list_send->size; j++) {
+            sendUsername(client_list_send->arr[j], strlen(client_list_send->arr[j]) + 1, t_map->m_userArr[i]->sockid);
+        }
+    }
     free(client_list_send);
 }
 
@@ -450,7 +451,7 @@ void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {
 
 void *createConnection(void *arg) {
         int n;
-        MsgHeader hdr;
+        uint32_t hdr;
 
         message_s_group *message_to_send_group = (message_s_group*) malloc(sizeof(message_s_group));
 
@@ -469,8 +470,7 @@ void *createConnection(void *arg) {
 
         while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
 
-            uint32_t type   = ntohl(hdr.type);
-            uint32_t length = ntohl(hdr.length);
+            uint32_t type   = ntohl(hdr);
 
             //the client is sending us information
             if(type == MSG_SEND) {
