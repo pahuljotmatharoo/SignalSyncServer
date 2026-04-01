@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include "chat_room_list.h"
 
-void init_ChatRoom_list(ChatRoomList *a)
+ChatRoomList* init_ChatRoom_list()
 {
-    a->head = NULL;
-    a->tail = NULL;
+    ChatRoomList* ChatRoom_list = malloc(sizeof(ChatRoomList));
+    ChatRoom_list->head = NULL;
+    ChatRoom_list->tail = NULL;
+    return ChatRoom_list;
 }
 
 void destructor_ChatRoom_list(ChatRoomList *ulist)

@@ -16,6 +16,7 @@
                 "${workspaceFolder}/user/user_list.c",
                 "${workspaceFolder}/messages/messages.c",
                 "${workspaceFolder}/chatroom/chat_room_list.c",
+                "${workspaceFolder}/user/user.c",
                 "-o",
                 "${workspaceFolder}/server"
             ],

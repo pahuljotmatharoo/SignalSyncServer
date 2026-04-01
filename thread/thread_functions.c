@@ -191,7 +191,7 @@ void writeToFileUser(recieved_message* message_to_send_user, char* threadUsernam
     pthread_mutex_unlock(user_fileMutex);
 }
 
-void sendList(user_map* t_map, int sockid) {
+void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex) {
     client_list_s* client_list_send = malloc(sizeof(client_list_s));
     memset(client_list_send, 0, sizeof(client_list_s));
     int outer_index = 0;
@@ -207,6 +207,8 @@ void sendList(user_map* t_map, int sockid) {
         }
     }
 
+    pthread_mutex_lock(socket_mutex);
+
     int type_of_message_list = MSG_LIST;
     send(sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
 
@@ -215,6 +217,8 @@ void sendList(user_map* t_map, int sockid) {
     for(int j = 0; j < client_list_send->size; j++) {
         sendUsername(client_list_send->arr[j], strlen(client_list_send->arr[j]) + 1, sockid);
     }
+    
+    pthread_mutex_unlock(socket_mutex);
     free(client_list_send);
 }
 
@@ -225,15 +229,20 @@ void sendUserJoin(user_map* t_map, user* new_user) {
             continue;
         }
         else {
+            pthread_mutex_lock(t_map->m_userArr[j]->user_mutex);
+
             send(t_map->m_userArr[j]->sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
             sendUsername(new_user->username, strlen(new_user->username) + 1, t_map->m_userArr[j]->sockid);
+
+            pthread_mutex_unlock(t_map->m_userArr[j]->user_mutex);
         }
     }
 }
 
-void sendChatroomList(ChatRoomList* chatroom_list, int sockid) {
+void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* socket_mutex) {
     ChatRoom* temp = chatroom_list->head;
 
+    pthread_mutex_lock(socket_mutex);
     int type_of_message_list = ROOM_LIST;
     send(sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
 
@@ -243,6 +252,7 @@ void sendChatroomList(ChatRoomList* chatroom_list, int sockid) {
         sendUsername(temp->ChatRoomName, strlen(temp->ChatRoomName) + 1, sockid);
         temp = temp -> next;
     }
+    pthread_mutex_unlock(socket_mutex);
 }
 
 void roomMethodMessage(thread_arg* curr_user) {
@@ -458,64 +468,64 @@ void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {
     roomMethodCreation(curr_user, ROOM_CREATE, newRoom->ChatRoomName, strlen(newRoom->ChatRoomName) + 1);
 }
 
+
 void *createConnection(void *arg) {
-        int n;
-        uint32_t hdr;
+    int n;
+    uint32_t hdr;
 
-        message_s_group *message_to_send_group = (message_s_group*) malloc(sizeof(message_s_group));
+    message_s_group *message_to_send_group = (message_s_group*) malloc(sizeof(message_s_group));
 
-        thread_arg* curr_user = (thread_arg*)arg;
+    thread_arg* curr_user = (thread_arg*)arg;
 
-        setupDir(curr_user->curr->username);
+    setupDir(curr_user->curr->username);
 
-        int current_user_socket = curr_user->curr->sockid;
+    int current_user_socket = curr_user->curr->sockid;
 
-        pthread_mutex_lock(curr_user->mutex);
-        print_client_list(curr_user->list_of_users);
-        pthread_mutex_unlock(curr_user->mutex);
+    pthread_mutex_lock(curr_user->mutex);
+    print_client_list(curr_user->list_of_users);
+    pthread_mutex_unlock(curr_user->mutex);
 
-        printf("Connection Established!\n");
-        printf("IP: %d \n", curr_user->curr->client.sin_addr.s_addr);
+    printf("Connection Established!\n");
+    printf("IP: %d \n", curr_user->curr->client.sin_addr.s_addr);
 
-        while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
+    while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
 
-            uint32_t type   = ntohl(hdr);
+        uint32_t type   = ntohl(hdr);
 
             //the client is sending us information
-            if(type == MSG_SEND) {
-                sendMessageUser(current_user_socket, curr_user);
-            }
-
-            else if(type == MSG_EXIT) {
-                printf("Closing Connection. \n");
-                break;
-            }
-
-            else if(type == ROOM_CREATE) {
-                handleRoomCreation(curr_user, current_user_socket);
-            }
-            else if(type == ROOM_MSG) {
-                roomMethodMessage(curr_user);
-            }
-            else if(type == FILE_SEND) {
-                sendFileUser(curr_user);
-            }
-            else if(type == FILE_GROUP) {
-                sendFileGroup(curr_user);
-            }
+        if(type == MSG_SEND) {
+            sendMessageUser(current_user_socket, curr_user);
         }
 
-        close(curr_user->curr->sockid);
+        else if(type == MSG_EXIT) {
+            printf("Closing Connection. \n");
+            break;
+        }
 
-        pthread_mutex_lock(curr_user->mutex);
+        else if(type == ROOM_CREATE) {
+            handleRoomCreation(curr_user, current_user_socket);
+        }
+        else if(type == ROOM_MSG) {
+            roomMethodMessage(curr_user);
+        }
+        else if(type == FILE_SEND) {
+            sendFileUser(curr_user);
+        }
+        else if(type == FILE_GROUP) {
+            sendFileGroup(curr_user);
+        }
+    }
 
-        removeUser(curr_user->user_Map, curr_user->curr);
+    close(curr_user->curr->sockid);
 
-        sendUserRemoval(curr_user);
+    pthread_mutex_lock(curr_user->mutex);
 
-        pthread_mutex_unlock(curr_user->mutex);
+    removeUser(curr_user->user_Map, curr_user->curr);
+    sendUserRemoval(curr_user);
 
-        free(arg);
-        free(message_to_send_group);
-        pthread_exit(NULL);
+    pthread_mutex_unlock(curr_user->mutex);
+
+    free(arg);
+    free(message_to_send_group);
+    pthread_exit(NULL);
 }

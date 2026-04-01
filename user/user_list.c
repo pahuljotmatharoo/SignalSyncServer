@@ -4,9 +4,11 @@
 #include <string.h>
 #include "user_list.h"
 
-void init_user_list(user_list *a) {
-    a->head = NULL;
-    a->tail = NULL;
+user_list* init_user_list() {
+    user_list*  client_list = malloc(sizeof(user_list));
+    client_list->head = NULL;
+    client_list->tail = NULL;
+    return client_list;
 }
 
 void destructor_user_list(user_list *ulist) {
@@ -71,11 +73,13 @@ void print_client_list(user_list *a) {
     }
 }
 
-void initUserMap(user_map* t_map) {
+user_map* initUserMap() {
+    user_map* t_map = malloc(sizeof(user_map));
     for(size_t i = 0; i < MAXUSERS; i++) {
         t_map->m_userArr[i] = NULL;
     }
     t_map->m_size = 0;
+    return t_map;
 }
 
 void destroyUserMap(user_map* t_map) {
