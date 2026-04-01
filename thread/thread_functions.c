@@ -17,6 +17,7 @@
 #define ROOM_LIST 7
 #define FILE_SEND 8
 #define FILE_GROUP 9
+#define USER_JOIN 10
 #define USERNAME_LENGTH 50
 #define message_length 128
 
@@ -190,7 +191,7 @@ void writeToFileUser(recieved_message* message_to_send_user, char* threadUsernam
     pthread_mutex_unlock(user_fileMutex);
 }
 
-void sendList(user_map* t_map) {
+void sendList(user_map* t_map, int sockid) {
     client_list_s* client_list_send = malloc(sizeof(client_list_s));
     memset(client_list_send, 0, sizeof(client_list_s));
     int outer_index = 0;
@@ -206,20 +207,28 @@ void sendList(user_map* t_map) {
         }
     }
 
-    for(size_t i = 0; i < MAXUSERS; i++) {
-        if(t_map->m_userArr[i] == NULL) {continue;}
+    int type_of_message_list = MSG_LIST;
+    send(sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
 
-        //make this into a function
-        int type_of_message_list = MSG_LIST;
-        send(t_map->m_userArr[i]->sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
+    sendSize(client_list_send->size, sockid);
 
-        sendSize(client_list_send->size, t_map->m_userArr[i]->sockid);
-
-        for(int j = 0; j < client_list_send->size; j++) {
-            sendUsername(client_list_send->arr[j], strlen(client_list_send->arr[j]) + 1, t_map->m_userArr[i]->sockid);
-        }
+    for(int j = 0; j < client_list_send->size; j++) {
+        sendUsername(client_list_send->arr[j], strlen(client_list_send->arr[j]) + 1, sockid);
     }
     free(client_list_send);
+}
+
+void sendUserJoin(user_map* t_map, user* new_user) {
+    int type_of_message_list = USER_JOIN;
+    for(size_t j = 0; j < MAXUSERS; j++) {
+        if(t_map->m_userArr[j] == NULL || t_map->m_userArr[j] == new_user) {
+            continue;
+        }
+        else {
+            send(t_map->m_userArr[j]->sockid, &type_of_message_list, sizeof(type_of_message_list), 0);
+            sendUsername(new_user->username, strlen(new_user->username) + 1, t_map->m_userArr[j]->sockid);
+        }
+    }
 }
 
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid) {

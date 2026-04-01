@@ -101,12 +101,13 @@ int main() {
         insertUser(user_Map, new_user);
 
         sendAllGroupMessages(new_user);
-
         pthread_create(&new_user->id, NULL, createConnection, arg);
 
         pthread_detach(new_user->id);
-        sendList(user_Map);
+        sendList(user_Map, new_sock); // send list of all users only to new user
         sendChatroomList(ChatRoom_list, new_sock); // send list of groups only to new user
+        sendUserJoin(user_Map, new_user); // send that THIS user joined to every connected user (except this new user)
+        
         pthread_mutex_unlock(&mutex);
 }
 }
