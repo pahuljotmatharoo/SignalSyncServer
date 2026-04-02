@@ -21,14 +21,14 @@ typedef struct {
     pthread_mutex_t* mutex;
 } user_info;
 
-void initUserMap(user_map* t_map);
+user_map*  initUserMap();
 void destroyUserMap(user_map* t_map);
 size_t hash(char* username);
 void insertUser(user_map* t_map, user* client);
 void removeUser(user_map* t_map, user* client);
 user_info findUser(user_map* t_map, char* username);
 
-void init_user_list(user_list *a);
+user_list* init_user_list();
 void destructor_user_list(user_list *ulist);
 void insert_user(user_list *a, user *client);
 void remove_user(user_list *a, user *client);

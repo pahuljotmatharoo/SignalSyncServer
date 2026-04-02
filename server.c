@@ -6,11 +6,11 @@
 #include <netdb.h>
 #include <unistd.h> 
 #include <string.h>
+#include "user/user.h"
 #include "user/user_list.h"
 #include "thread/thread_functions.h"
 #include "messages/messages.h"
 #include "chatroom/chat_room_list.h"
-#define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
 
@@ -34,6 +34,7 @@ void cleanup() {
     close(sock);
 }
 
+// can't be bothered to put this in thread_functions.c, needs all the globals from server.c
 thread_arg* setupThreadArg(user* new_user) {
     thread_arg *arg = malloc(sizeof(thread_arg));
     arg->curr = new_user;
@@ -46,15 +47,42 @@ thread_arg* setupThreadArg(user* new_user) {
     return arg;
 }
 
-int main() {
-    atexit(cleanup);
+void main_function() {
     pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&user_fileMutex, NULL);
     pthread_mutex_init(&group_fileMutex, NULL);
 
-    user_Map = malloc(sizeof(user_map));
+    user_Map = initUserMap();
+    client_list = init_user_list();
+    ChatRoom_list = init_ChatRoom_list();
 
-    initUserMap(user_Map);
+    while (1) {
+        struct sockaddr_in client;
+        socklen_t client_len = sizeof(client);
+        int new_sock = accept(sock, (struct sockaddr*)&client, &client_len);
+
+        if (new_sock < 0) { continue; }
+
+        user *new_user = initUser(&client, new_sock);
+
+        thread_arg* arg = setupThreadArg(new_user);
+        
+        pthread_mutex_lock(&mutex);
+
+        insertUser(user_Map, new_user);
+        sendAllGroupMessages(new_user);
+        pthread_create(&new_user->id, NULL, createConnection, arg);
+        pthread_detach(new_user->id);
+        sendList(user_Map, new_sock, new_user->user_mutex); // send list of all users only to new user
+        sendChatroomList(ChatRoom_list, new_sock, new_user->user_mutex); // send list of groups only to new user
+        sendUserJoin(user_Map, new_user); // send that THIS user joined to every connected user (except this new user)
+
+        pthread_mutex_unlock(&mutex);
+    }
+}
+
+int main() {
+    atexit(cleanup);
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -67,47 +95,5 @@ int main() {
 
     listen(sock, 25);
 
-    client_list = malloc(sizeof(user_list));
-    init_user_list(client_list);
-
-    ChatRoom_list = malloc(sizeof(ChatRoomList));
-    init_ChatRoom_list(ChatRoom_list);
-
-    while (1) {
-        // move this into one function
-        struct sockaddr_in client;
-        socklen_t client_len = sizeof(client);
-        int new_sock = accept(sock, (struct sockaddr*)&client, &client_len);
-
-        if (new_sock < 0) {
-            perror("accept");
-            continue;
-        }
-
-        user *new_user = malloc(sizeof(user));
-
-        new_user->client = client;
-        new_user->next = NULL;
-        new_user->sockid = new_sock;
-        new_user->user_mutex = malloc(sizeof(pthread_mutex_t));
-        new_user->username = malloc(USERNAME_LENGTH); // temporary fix
-        uint32_t size = recvExactUsername(new_user->username, new_user->sockid);
-        new_user->username_length = size;
-
-
-        thread_arg *arg = setupThreadArg(new_user);
-        
-        pthread_mutex_lock(&mutex);
-        insertUser(user_Map, new_user);
-
-        sendAllGroupMessages(new_user);
-        pthread_create(&new_user->id, NULL, createConnection, arg);
-
-        pthread_detach(new_user->id);
-        sendList(user_Map, new_sock); // send list of all users only to new user
-        sendChatroomList(ChatRoom_list, new_sock); // send list of groups only to new user
-        sendUserJoin(user_Map, new_user); // send that THIS user joined to every connected user (except this new user)
-        
-        pthread_mutex_unlock(&mutex);
-}
+    main_function();
 }

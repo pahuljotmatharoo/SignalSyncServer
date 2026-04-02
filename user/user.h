@@ -13,4 +13,6 @@ typedef struct user {
     uint32_t          username_length;
 } user;
 
+user* initUser(struct sockaddr_in* client, int sockid);
+
 #endif /* USER_H */
