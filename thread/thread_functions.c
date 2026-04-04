@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,6 +18,7 @@
 #define FILE_SEND 8
 #define FILE_GROUP 9
 #define USER_JOIN 10
+#define FILE_DOWNLOAD 11
 #define USERNAME_LENGTH 50
 #define message_length 128
 
@@ -124,11 +125,11 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
 
     int type_of_message = FILE_SEND;
     pthread_mutex_lock(info.mutex);
+
     send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
-    sendSize(msg->size_m, info.sockid);
-    sendAll(msg->arr, info.sockid, msg->size_m);
     sendUsername(threadArg->curr->username, threadArg->curr->username_length, info.sockid);
     sendUsername(msg->filename_to_send, msg->size_f_name, info.sockid);
+
     pthread_mutex_unlock(info.mutex);
 }
 
@@ -406,6 +407,11 @@ void processFile(recieved_png* png, uint32_t png_size) {
     png->size_f_name = strlen(png->filename_to_send) + 1;
 }
 
+void savePng(recieved_png* png) {
+    FILE* fp = fopen(png->filename_to_send, "w");
+    fwrite(png->arr, 1, png->size_m, fp);
+    fclose(fp);
+}
 
 
 void sendFileUser(thread_arg* arg) {
@@ -416,8 +422,9 @@ void sendFileUser(thread_arg* arg) {
     recvExactUsername(png.user_to_send, arg->curr->sockid); // user to send to
     recvExactUsername(png.filename_to_send, arg->curr->sockid); // filename
     processFile(&png, png_size);
+    savePng(&png);
     sendPng(&png, arg);
-    free(png.arr);
+    //free(png.arr);
 }
 
 void sendPngGroup(recieved_png* msg, thread_arg* threadArg) {
@@ -468,6 +475,39 @@ void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {
     roomMethodCreation(curr_user, ROOM_CREATE, newRoom->ChatRoomName, strlen(newRoom->ChatRoomName) + 1);
 }
 
+int getFileSize(FILE* fp) {
+    fseek(fp, 0, SEEK_END);
+    int size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    return size;
+}
+
+void downloadFile(thread_arg* threadArg) {
+    pthread_mutex_lock(threadArg->curr->user_mutex);
+
+    char* filename = malloc(USERNAME_LENGTH); // TEMPORARY
+    recvExactUsername(filename, threadArg->curr->sockid);
+    
+    FILE* fp = fopen(filename, "r");
+    if(fp == NULL) {return;}
+
+    int size = getFileSize(fp);
+
+    char* file_data = malloc(size);
+
+    fread(file_data, 1, size, fp);
+
+    int type_of_message = FILE_DOWNLOAD;
+    send(threadArg->curr->sockid, &type_of_message, sizeof(type_of_message), 0);
+    sendSize(size, threadArg->curr->sockid);
+    sendAll(file_data, threadArg->curr->sockid, size);
+
+    pthread_mutex_unlock(threadArg->curr->user_mutex);
+
+    fclose(fp);
+    free(filename);
+}
+
 
 void *createConnection(void *arg) {
     int n;
@@ -513,6 +553,9 @@ void *createConnection(void *arg) {
         }
         else if(type == FILE_GROUP) {
             sendFileGroup(curr_user);
+        }
+        else if(type == FILE_DOWNLOAD) {
+            handleFileDownload(curr_user);
         }
     }
 

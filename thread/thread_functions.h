@@ -1,6 +1,7 @@
 #ifndef THREAD_FUNCTIONS_H
 #define THREAD_FUNCTIONS_H
 
+#include <stdio.h>
 #include "../user/user.h"
 #include "../user/user_list.h"
 #include "../chatroom/chat_room_list.h"
@@ -40,6 +41,8 @@ void processFile(recieved_png* png, uint32_t png_size);
 uint32_t recvSize(int sockid);
 void initFileDataStructure(recieved_png* png, uint32_t png_size);
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message);
-
+void saveFile(recieved_png* png);
+void downloadFile(thread_arg* threadArg);
+int getFileSize(FILE* fp);
 
 #endif /* THREAD_FUNCTIONS_H */
