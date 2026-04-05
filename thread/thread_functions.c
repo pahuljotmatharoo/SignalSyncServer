@@ -314,7 +314,6 @@ void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, 
         pthread_mutex_unlock(t_map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(curr_user->mutex);
-    //free(data);
 }
 
 //username is the user who is sending message
@@ -339,8 +338,8 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) { // userna
     }
 
     strncpy(recievedMessage.user_to_send, threadArg->curr->username, strlen(threadArg->curr->username) + 1);
-    recievedMessage.size_m = htonl(recievedMessage.size_m);
-    recievedMessage.size_u = htonl(recievedMessage.size_u);
+    recievedMessage.size_m = htonl(recievedMessage.size_m + 1);
+    recievedMessage.size_u = htonl(recievedMessage.size_u + 1);
 
     pthread_mutex_lock(info.mutex);
     sendMessage(&recievedMessage, info.sockid, MSG_SEND);
