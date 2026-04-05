@@ -439,8 +439,6 @@ void sendPngGroup(recieved_png* msg, thread_arg* threadArg) {
         pthread_mutex_lock(threadArg->user_Map->m_userArr[i]->user_mutex);
         int sockid = threadArg->user_Map->m_userArr[i]->sockid;
         send(sockid, &type_of_message, sizeof(type_of_message), 0);
-        sendSize(msg->size_m,  sockid);
-        sendAll(msg->arr, sockid, msg->size_m);
         sendUsername(threadArg->curr->username, strlen(threadArg->curr->username) + 1, sockid);
         sendUsername(msg->filename_to_send, msg->size_f_name, sockid);
         sendUsername(msg->user_to_send, msg->size_u + 1, sockid);
@@ -459,6 +457,7 @@ void sendFileGroup(thread_arg* arg) {
     recvExactUsername(png.filename_to_send, arg->curr->sockid); // filename
     png.size_f_name = strlen(png.filename_to_send) + 1;
     processFile(&png, png_size);
+    savePng(&png);
     sendPngGroup(&png, arg);
     free(png.arr);
 }
@@ -555,7 +554,7 @@ void *createConnection(void *arg) {
             sendFileGroup(curr_user);
         }
         else if(type == FILE_DOWNLOAD) {
-            handleFileDownload(curr_user);
+            downloadFile(curr_user);
         }
     }
 
