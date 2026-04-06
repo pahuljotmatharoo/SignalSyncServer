@@ -17,8 +17,7 @@ typedef struct thread_arg {
     pthread_mutex_t* group_fileMutex;
 } thread_arg;
 
-size_t recvExactMsg(void* buf, size_t len, int sock);
-size_t recvExactUsername(char* temp, int sock);
+char* recvExactMsg(size_t* len, int sock);
 void recvExactPng(char* temp, uint32_t len, int sock);
 void *createConnection(void *arg);
 void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex);
@@ -26,7 +25,7 @@ void sendAllGroupMessages(user *new_user);
 void sendUserJoin(user_map* t_map, user* new_user);
 char** parseGroupString(char message[USERNAME_LENGTH + message_length]);
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* socket_mutex);
-void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
+void roomMethodCreation(thread_arg* curr_user, int type_of_message, char* data, int size);
 void roomMethodMessage(thread_arg* curr_user);
 void writeToFileUser(recieved_message* message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *fileMutex);
 void writeToFileGroup(recieved_message* message_to_send_group, char* username, pthread_mutex_t* group_fileMutex);
