@@ -8,10 +8,10 @@
 #include "../messages/messages.h"
 
 typedef struct thread_arg {
-    user*      curr;
-    user_list* list_of_users;
-    ChatRoomList* ChatRoom_list;
-    user_map* user_Map;
+    user*            curr;
+    user_list*       list_of_users;
+    ChatRoomList*    ChatRoom_list;
+    user_map*        user_Map;
     pthread_mutex_t* mutex;
     pthread_mutex_t* user_fileMutex;
     pthread_mutex_t* group_fileMutex;

@@ -5,8 +5,8 @@
 #include "chat_room.h"
 
 typedef struct ChatRoomList {
-    ChatRoom *head;
-    ChatRoom *tail;
+    ChatRoom* head;
+    ChatRoom* tail;
     int       size;
 } ChatRoomList;
 

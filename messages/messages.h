@@ -26,20 +26,20 @@ typedef struct message_recieved {
 } recieved_message;
 
 typedef struct {
-    char* arr;
-    char* user_to_send;
-    char* filename_to_send;
+    char*    arr;
+    char*    user_to_send;
+    char*    filename_to_send;
     uint32_t size_m;
     uint32_t size_u;
     uint32_t size_f_name;
 } recieved_png;
 
-typedef struct list {
+typedef struct {
     uint32_t size;
     char arr[max_users][USERNAME_LENGTH];
 } client_list_s;
 
-typedef struct Msg{
+typedef struct {
     uint32_t type;    // message type
     uint32_t length;  // payload length
 } MsgHeader;
