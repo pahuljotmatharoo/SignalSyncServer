@@ -17,9 +17,7 @@ typedef struct thread_arg {
     pthread_mutex_t* group_fileMutex;
 } thread_arg;
 
-size_t recvExactMsg(void* buf, size_t len, int sock);
-size_t recvExactUsername(char* temp, int sock);
-void recvExactPng(char* temp, uint32_t len, int sock);
+char* recvExactMsg(uint32_t* len, int sock);
 void *createConnection(void *arg);
 void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex);
 void sendAllGroupMessages(user *new_user);

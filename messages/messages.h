@@ -19,16 +19,16 @@ typedef struct message_to_send_group {
 } message_s_group;
 
 typedef struct message_recieved {
-    char arr[message_length];
-    char user_to_send[USERNAME_LENGTH];
+    char* arr;
+    char* user_to_send;
     uint32_t size_m;
     uint32_t size_u;
 } recieved_message;
 
 typedef struct {
     char* arr;
-    char user_to_send[USERNAME_LENGTH];
-    char filename_to_send[USERNAME_LENGTH];
+    char* user_to_send;
+    char* filename_to_send;
     uint32_t size_m;
     uint32_t size_u;
     uint32_t size_f_name;
