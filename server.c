@@ -19,9 +19,9 @@
 pthread_mutex_t mutex;
 pthread_mutex_t user_fileMutex;
 pthread_mutex_t group_fileMutex;
-user_list *client_list;
-ChatRoomList* ChatRoom_list;
-user_map* user_Map;
+user_list*      client_list;
+ChatRoomList*   ChatRoom_list;
+user_map*       user_Map;
 int sock;
 
 void cleanup() {
@@ -36,7 +36,7 @@ void cleanup() {
 
 // can't be bothered to put this in thread_functions.c, needs all the globals from server.c
 thread_arg* setupThreadArg(user* new_user) {
-    thread_arg *arg = malloc(sizeof(thread_arg));
+    thread_arg* arg = malloc(sizeof(thread_arg));
     arg->curr = new_user;
     arg->list_of_users = client_list;
     arg->ChatRoom_list = ChatRoom_list;

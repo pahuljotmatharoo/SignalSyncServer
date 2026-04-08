@@ -6,9 +6,9 @@
 #define MAXGROUPS 10
 
 typedef struct {
-    user *head;
-    user *tail;
-    unsigned int   size;
+    user*       head;
+    user*       tail;
+    unsigned int size;
 } user_list;
 
 typedef struct {
@@ -17,7 +17,7 @@ typedef struct {
 } user_map;
 
 typedef struct {
-    int sockid;
+    int              sockid;
     pthread_mutex_t* mutex;
 } user_info;
 

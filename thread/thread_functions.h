@@ -8,10 +8,10 @@
 #include "../messages/messages.h"
 
 typedef struct thread_arg {
-    user*      curr;
-    user_list* list_of_users;
-    ChatRoomList* ChatRoom_list;
-    user_map* user_Map;
+    user*            curr;
+    user_list*       list_of_users;
+    ChatRoomList*    ChatRoom_list;
+    user_map*        user_Map;
     pthread_mutex_t* mutex;
     pthread_mutex_t* user_fileMutex;
     pthread_mutex_t* group_fileMutex;
@@ -33,14 +33,18 @@ void setupDir(char* username);
 char* setupFileStringUser(char *username, char* username_to_send);
 char* setupFileStringGroup(char* group);
 void sendUserRemoval(thread_arg* threadArg);
-void sendPng(recieved_png* msg, thread_arg* threadArg);
+void sendFile(recievedFile* file, thread_arg* threadArg);
 void sendFileUser(thread_arg* arg);
-void processFile(recieved_png* png, uint32_t png_size);
+void processFile(recievedFile* file, uint32_t file_size);
 uint32_t recvSize(int sockid);
-void initFileDataStructure(recieved_png* png, uint32_t png_size);
+void initFileDataStructure(recievedFile* file, uint32_t file_size);
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message);
-void saveFile(recieved_png* png);
+void saveFile(recievedFile* file);
 void downloadFile(thread_arg* threadArg);
 int getFileSize(FILE* fp);
+void sendFileGroup(thread_arg* arg);
+void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg);
+void freeFile(recievedFile* file);
+void freeRecievedMessage(recieved_message* recievedMessage);
 
 #endif /* THREAD_FUNCTIONS_H */

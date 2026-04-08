@@ -92,9 +92,9 @@ void sendUsername(char* username, int size, int sockid) {
     send(sockid, username, size, 0);
 }
 
-void sendPng(recieved_png* msg, thread_arg* threadArg) {
+void sendFile(recievedFile* file, thread_arg* threadArg) {
     pthread_mutex_lock(threadArg->mutex);
-    user_info info = findUser(threadArg->user_Map, msg->user_to_send);
+    user_info info = findUser(threadArg->user_Map, file->user_to_send);
     pthread_mutex_unlock(threadArg->mutex);
 
     if(info.mutex == NULL) {
@@ -107,7 +107,7 @@ void sendPng(recieved_png* msg, thread_arg* threadArg) {
 
     send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
     sendUsername(threadArg->curr->username, threadArg->curr->username_length, info.sockid);
-    sendUsername(msg->filename_to_send, msg->size_f_name, info.sockid);
+    sendUsername(file->filename_to_send, file->size_f_name, info.sockid);
 
     pthread_mutex_unlock(info.mutex);
 }
@@ -371,48 +371,48 @@ void sendUserRemoval(thread_arg* threadArg) {
     }
 }
 
-void initFileDataStructure(recieved_png* png, uint32_t png_size) {
-    png->arr = malloc(png_size);
-    memset(png->arr, 0, png_size);
+void initFileDataStructure(recievedFile* file, uint32_t file_size) {
+    file->arr = malloc(file_size);
+    memset(file->arr, 0, file_size);
 }
 
 uint32_t recvSize(int sockid) {
-    uint32_t png_size = 0;
-    recv(sockid, &png_size, sizeof(uint32_t), 0);
-    return ntohl(png_size);
+    uint32_t size = 0;
+    recv(sockid, &size, sizeof(uint32_t), 0);
+    return ntohl(size);
 }
 
-void processFile(recieved_png* png, uint32_t png_size) {
-    png->user_to_send[49] = '\0';
-    png->size_m = png_size;
-    png->size_u = strlen(png->user_to_send) + 1;
-    png->size_f_name = strlen(png->filename_to_send) + 1;
+void processFile(recievedFile* file, uint32_t file_size) {
+    file->user_to_send[49] = '\0';
+    file->size_m = file_size;
+    file->size_u = strlen(file->user_to_send) + 1;
+    file->size_f_name = strlen(file->filename_to_send) + 1;
 }
 
-void savePng(recieved_png* png) {
-    FILE* fp = fopen(png->filename_to_send, "w");
-    fwrite(png->arr, 1, png->size_m, fp);
+void saveFile(recievedFile* file) {
+    FILE* fp = fopen(file->filename_to_send, "w");
+    fwrite(file->arr, 1, file->size_m, fp);
     fclose(fp);
 }
 
 
 void sendFileUser(thread_arg* arg) {
-    recieved_png png;
-    png.arr = recvExactMsg(&png.size_m, arg->curr->sockid);
-    png.user_to_send = recvExactMsg(&png.size_u, arg->curr->sockid);
-    png.filename_to_send = recvExactMsg(&png.size_f_name, arg->curr->sockid);
-    savePng(&png);
-    sendPng(&png, arg);
-    freePng(&png);
+    recievedFile file;
+    file.arr = recvExactMsg(&file.size_m, arg->curr->sockid);
+    file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
+    file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
+    saveFile(&file);
+    sendFile(&file, arg);
+    freeFile(&file);
 }
 
-void freePng(recieved_png* png) {
-    free(png->arr);
-    free(png->filename_to_send);
-    free(png->user_to_send);
+void freeFile(recievedFile* file) {
+    free(file->arr);
+    free(file->filename_to_send);
+    free(file->user_to_send);
 }
 
-void sendPngGroup(recieved_png* msg, thread_arg* threadArg) {
+void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg) {
     int type_of_message = FILE_GROUP;
 
     pthread_mutex_lock(threadArg->mutex);
@@ -425,23 +425,23 @@ void sendPngGroup(recieved_png* msg, thread_arg* threadArg) {
         int sockid = threadArg->user_Map->m_userArr[i]->sockid;
         send(sockid, &type_of_message, sizeof(type_of_message), 0);
         sendUsername(threadArg->curr->username, strlen(threadArg->curr->username) + 1, sockid);
-        sendUsername(msg->filename_to_send, msg->size_f_name, sockid);
-        sendUsername(msg->user_to_send, msg->size_u + 1, sockid);
+        sendUsername(file->filename_to_send, file->size_f_name, sockid);
+        sendUsername(file->user_to_send, file->size_u + 1, sockid);
         pthread_mutex_unlock(threadArg->user_Map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(threadArg->mutex);
 }
 
 void sendFileGroup(thread_arg* arg) {
-    recieved_png png;
+    recievedFile file;
 
-    png.arr = recvExactMsg(&png.size_m, arg->curr->sockid);
-    png.user_to_send = recvExactMsg(&png.size_u, arg->curr->sockid);
-    png.filename_to_send = recvExactMsg(&png.size_f_name, arg->curr->sockid);
+    file.arr = recvExactMsg(&file.size_m, arg->curr->sockid);
+    file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
+    file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
 
-    savePng(&png);
-    sendPngGroup(&png, arg);
-    freePng(&png);
+    saveFile(&file);
+    sendFileGroupMethod(&file, arg);
+    freeFile(&file);
 }
 
 void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {

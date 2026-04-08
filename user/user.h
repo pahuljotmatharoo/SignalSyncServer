@@ -4,13 +4,13 @@
 #include <netinet/in.h>   /* for struct sockaddr_in */
 
 typedef struct user {
-    pthread_t         id;
-    pthread_mutex_t*  user_mutex;
+    pthread_t          id;
+    pthread_mutex_t*   user_mutex;
     struct sockaddr_in client;
-    struct user      *next;
-    int               sockid;
-    char*             username;
-    uint32_t          username_length;
+    struct user*       next;
+    int                sockid;
+    char*              username;
+    uint32_t           username_length;
 } user;
 
 user* initUser(struct sockaddr_in* client, int sockid);

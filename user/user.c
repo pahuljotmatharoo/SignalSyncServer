@@ -12,5 +12,5 @@ user* initUser(struct sockaddr_in* client, int sockid) {
     new_user->user_mutex = malloc(sizeof(pthread_mutex_t));
     new_user->username = recvExactMsg(&new_user->username_length, new_user->sockid);
 
-    return new_user;
+    return new_user; 
 }

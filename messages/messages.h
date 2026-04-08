@@ -32,7 +32,7 @@ typedef struct {
     uint32_t size_m;
     uint32_t size_u;
     uint32_t size_f_name;
-} recieved_png;
+} recievedFile;
 
 typedef struct list {
     uint32_t size;
