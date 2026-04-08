@@ -48,12 +48,21 @@ void sendAllGroupMessages(user *new_user) {
 
         snprintf(group_name, sizeof(group_name), "Group %zu", i);
 
-        while (fgets(buf, sizeof(buf), fp)) {
+        int group_name_length = htonl(strlen(group_name) + 1);
+
+        while (fgets(buf, sizeof(buf), fp)) { // each line
             char** string_split = parseGroupString(buf);
-            send(new_user->sockid, &type_of_message, sizeof(type_of_message), 0);
-            send(new_user->sockid, string_split[1], message_length, 0);
-            send(new_user->sockid, string_split[0], USERNAME_LENGTH, 0);
-            send(new_user->sockid, group_name, USERNAME_LENGTH, 0); // this is send full dir & not group name
+
+            recieved_message recvMsg = {0};
+            recvMsg.arr = string_split[1];
+            recvMsg.size_m = htonl(strlen(string_split[1]) + 1);
+            recvMsg.user_to_send = string_split[0];
+            recvMsg.size_u = htonl(strlen(string_split[0]) + 1);
+
+            sendMessage(&recvMsg, new_user->sockid, type_of_message);
+            send(new_user->sockid, &group_name_length, sizeof(int), 0);
+            send(new_user->sockid, group_name, ntohl(group_name_length), 0); // this is send full dir & not group name
+
             free(string_split[0]);
             free(string_split[1]);
             free(string_split);
@@ -113,10 +122,10 @@ void sendFile(recievedFile* file, thread_arg* threadArg) {
 }
 
 //wish we had templates in C
-void writeToFileGroup(recieved_message* message_to_send_group, char* username, pthread_mutex_t *group_fileMutex) {
+void writeToFileGroup(recieved_message* message_to_send_group, char* group, char* username, pthread_mutex_t *group_fileMutex) {
     pthread_mutex_lock(group_fileMutex);
 
-    char* filename = setupFileStringGroup(message_to_send_group->user_to_send); // one we are sending to
+    char* filename = setupFileStringGroup(group); // one we are sending to
 
     FILE* fp = fopen(filename, "a");
     fseek(fp, 0, SEEK_END);
@@ -270,7 +279,7 @@ void roomMethodMessage(thread_arg* curr_user) {
     }
     pthread_mutex_unlock(curr_user->mutex);
 
-    writeToFileGroup(&recievedMessage, curr_user->curr->username, curr_user->group_fileMutex);
+    writeToFileGroup(&recievedMessage, group, curr_user->curr->username, curr_user->group_fileMutex);
 
     free(group);
     freeRecievedMessage(&recievedMessage);

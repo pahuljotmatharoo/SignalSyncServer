@@ -5,7 +5,7 @@
 #include "../user/user_list.h"
 
 typedef struct ChatRoom {
-    char ChatRoomName[chatroom_length];
+    char* ChatRoomName;
     uint32_t name_length;
     struct ChatRoom* next;
 } ChatRoom;

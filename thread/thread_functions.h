@@ -27,7 +27,7 @@ void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* 
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
 void roomMethodMessage(thread_arg* curr_user);
 void writeToFileUser(recieved_message* message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *fileMutex);
-void writeToFileGroup(recieved_message* message_to_send_group, char* username, pthread_mutex_t* group_fileMutex);
+void writeToFileGroup(recieved_message* message_to_send_group, char* group, char* username, pthread_mutex_t* group_fileMutex);
 void sendMessageUser(int current_user_socket, thread_arg* threadArg);
 void setupDir(char* username);
 char* setupFileStringUser(char *username, char* username_to_send);
