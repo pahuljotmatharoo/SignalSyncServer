@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include "thread_functions.h"
 #include "../user/user_list.h"
 #include "../messages/messages.h"
@@ -21,7 +22,50 @@
 #define USERNAME_LENGTH 50
 #define message_length 128
 
-char** parseGroupString(char message[USERNAME_LENGTH + message_length]) {
+void sendPrevConnectedUserMessages(user* user) {
+    int type_of_message = MSG_SEND;
+    char base_string[50];
+    char buf[USERNAME_LENGTH + message_length];
+    snprintf(base_string, sizeof(base_string), "logs/users/%s", user->username);
+
+    struct dirent *entry;
+    
+    DIR *dp = opendir(base_string);
+
+    if(dp == NULL) {return;}
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        char path[128];
+        snprintf(path, sizeof(path), "%s/%s", base_string, entry->d_name);
+        FILE *fp = fopen(path, "r");
+
+        if (fp == NULL) { continue; }
+
+        while (fgets(buf, sizeof(buf), fp)) {
+            char** string_split = parseFileString(buf);
+
+            recieved_message recvMsg = {0};
+            recvMsg.arr = string_split[1];
+            recvMsg.size_m = htonl(strlen(string_split[1]) + 1);
+            recvMsg.user_to_send = string_split[0];
+            recvMsg.size_u = htonl(strlen(string_split[0]) + 1);
+
+            sendMessage(&recvMsg, user->sockid, type_of_message);
+
+            free(string_split[0]);
+            free(string_split[1]);
+            free(string_split);
+        }
+    fclose(fp);
+    }
+
+    closedir(dp);
+}
+
+char** parseFileString(char message[USERNAME_LENGTH + message_length]) {
     char** return_strings = malloc(2);
     char* left = malloc(USERNAME_LENGTH);
     char* right = malloc(message_length);
@@ -51,7 +95,7 @@ void sendAllGroupMessages(user *new_user) {
         int group_name_length = htonl(strlen(group_name) + 1);
 
         while (fgets(buf, sizeof(buf), fp)) { // each line
-            char** string_split = parseGroupString(buf);
+            char** string_split = parseFileString(buf);
 
             recieved_message recvMsg = {0};
             recvMsg.arr = string_split[1];
@@ -67,6 +111,7 @@ void sendAllGroupMessages(user *new_user) {
             free(string_split[1]);
             free(string_split);
         }
+        fclose(fp);
     }
 }
 
@@ -150,7 +195,7 @@ void writeToFileUser(recieved_message* message_to_send_user, char* threadUsernam
     else {
         fseek(fp, 0, SEEK_END);
         fprintf(fp, "%s", threadUsername);
-        fprintf(fp, " : ");
+        fprintf(fp, ": ");
         fprintf(fp, "%s", message_to_send_user->arr);
         fprintf(fp, "\n");
         fclose(fp);

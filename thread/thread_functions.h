@@ -22,7 +22,7 @@ void *createConnection(void *arg);
 void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex);
 void sendAllGroupMessages(user *new_user);
 void sendUserJoin(user_map* t_map, user* new_user);
-char** parseGroupString(char message[USERNAME_LENGTH + message_length]);
+char** parseFileString(char message[USERNAME_LENGTH + message_length]);
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* socket_mutex);
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
 void roomMethodMessage(thread_arg* curr_user);
@@ -46,5 +46,6 @@ void sendFileGroup(thread_arg* arg);
 void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg);
 void freeFile(recievedFile* file);
 void freeRecievedMessage(recieved_message* recievedMessage);
+void sendPrevConnectedUserMessages(user* user);
 
 #endif /* THREAD_FUNCTIONS_H */

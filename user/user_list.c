@@ -85,6 +85,7 @@ user_map* initUserMap() {
 void destroyUserMap(user_map* t_map) {
     for(size_t i = 0; i < MAXUSERS; i++) {
         if(t_map->m_userArr[i]) {
+            pthread_mutex_destroy(t_map->m_userArr[i]->user_mutex);
             free(t_map->m_userArr[i]->user_mutex);
             free(t_map->m_userArr[i]);
         }

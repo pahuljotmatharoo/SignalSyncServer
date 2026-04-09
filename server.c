@@ -77,6 +77,7 @@ void main_function() {
         sendList(user_Map, new_sock, new_user->user_mutex); // send list of all users only to new user
         sendChatroomList(ChatRoom_list, new_sock, new_user->user_mutex); // send list of groups only to new user
         sendUserJoin(user_Map, new_user); // send that THIS user joined to every connected user (except this new user)
+        sendPrevConnectedUserMessages(new_user);
         sendAllGroupMessages(new_user);
 
         pthread_mutex_unlock(&mutex);
