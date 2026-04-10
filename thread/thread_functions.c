@@ -19,11 +19,15 @@
 #define FILE_GROUP 9
 #define USER_JOIN 10
 #define FILE_DOWNLOAD 11
+#define USER_CHATS 12
 #define USERNAME_LENGTH 50
 #define message_length 128
 
 void sendPrevConnectedUserMessages(user* user) {
-    int type_of_message = MSG_SEND;
+    // 1. Send file name (its the users name)
+    // 2. Send all file content
+    // 3. Send "END" string to signify end
+    int type_of_message = USER_CHATS;
     char base_string[50];
     char buf[USERNAME_LENGTH + message_length];
     snprintf(base_string, sizeof(base_string), "logs/users/%s", user->username);
@@ -34,34 +38,46 @@ void sendPrevConnectedUserMessages(user* user) {
 
     if(dp == NULL) {return;}
 
+    send(user->sockid, &(type_of_message), sizeof(int), 0);
+
     while ((entry = readdir(dp)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
 
         char path[128];
+        char filename[50];
+        strncpy(filename, entry->d_name, strlen(entry->d_name) - 4);
+        filename[strlen(entry->d_name) - 3] = '\0';
+        filename[strlen(entry->d_name) - 2] = '\0';
         snprintf(path, sizeof(path), "%s/%s", base_string, entry->d_name);
         FILE *fp = fopen(path, "r");
 
         if (fp == NULL) { continue; }
+        sendUsername("FILE", 5, user->sockid); // indicate the start of a file
+        sendUsername(filename, strlen(filename) + 1, user->sockid); // filename (username)
 
         while (fgets(buf, sizeof(buf), fp)) {
             char** string_split = parseFileString(buf);
 
-            recieved_message recvMsg = {0};
-            recvMsg.arr = string_split[1];
-            recvMsg.size_m = htonl(strlen(string_split[1]) + 1);
-            recvMsg.user_to_send = string_split[0];
-            recvMsg.size_u = htonl(strlen(string_split[0]) + 1);
+            recieved_message message_struct = {0};
+            message_struct.arr = string_split[1];
+            message_struct.size_m = htonl(strlen(string_split[1]) + 1);
+            message_struct.user_to_send = string_split[0];
+            message_struct.size_u = htonl(strlen(string_split[0]) + 1);
 
-            sendMessage(&recvMsg, user->sockid, type_of_message);
+            send(user->sockid, &(message_struct.size_m), sizeof(uint32_t), 0);
+            send(user->sockid, (message_struct.arr), ntohl(message_struct.size_m), 0);
+            send(user->sockid, &(message_struct.size_u), sizeof(uint32_t), 0);
+            send(user->sockid, (message_struct.user_to_send), ntohl(message_struct.size_u), 0);
 
             free(string_split[0]);
             free(string_split[1]);
             free(string_split);
         }
-    fclose(fp);
+        fclose(fp);
     }
 
+    sendUsername("END", 4, user->sockid); // END string
     closedir(dp);
 }
 

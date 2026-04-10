@@ -47,5 +47,6 @@ void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg);
 void freeFile(recievedFile* file);
 void freeRecievedMessage(recieved_message* recievedMessage);
 void sendPrevConnectedUserMessages(user* user);
+void sendUsername(char* username, int size, int sockid);
 
 #endif /* THREAD_FUNCTIONS_H */
