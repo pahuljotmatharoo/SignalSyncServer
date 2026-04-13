@@ -102,7 +102,7 @@ size_t hash(char* username) {
     return (sum % MAXUSERS);
 }
 
-void insertUser(user_map *t_map, user *client) {
+void insertUser(user_map* t_map, user_files* t_files, user *client) {
     size_t index = hash(client->username);
 
     while(t_map->m_userArr[index] != NULL) {
@@ -110,6 +110,7 @@ void insertUser(user_map *t_map, user *client) {
     }
 
     t_map->m_userArr[index] = client;
+    t_files->m_users[index] = client;
     t_map->m_size++;
 }
 
@@ -151,4 +152,39 @@ user_info findUser(user_map* t_map, char* username) {
         }
     }
     return info;
+}
+
+char** resizeArray(char** arr, unsigned int* size) {
+    arr = realloc(arr, *size * 2);
+    *size = *size * 2;
+    return arr;
+}
+
+user_files* initUserFilesMap() {
+    user_files* files_map = (user_files*)malloc(sizeof(user_files));
+    for(int i = 0; i < MAXUSERS; i++) {
+        files_map->m_size[i] = 1;
+    }
+    for(int i = 0; i < MAXUSERS; i++) {
+        files_map->m_capacity[i] = 1;
+    }
+    for(int i = 0; i < MAXUSERS; i++) {
+        files_map->m_files[i] = NULL;
+    }
+}
+
+void insertFile(user_files* t_map, user* client, char* file) {
+    size_t index = hash(client->username);
+
+    while(t_map->m_users[index] != NULL && t_map->m_users[index] != client) {
+        index++;
+    }
+
+    if(t_map->m_size[index] == t_map->m_capacity[index]) {
+        t_map->m_files[index] = resizeArray(t_map->m_files[index], &t_map->m_capacity[index]);
+    }
+    t_map->m_files[index][t_map->m_size[index]] = malloc(strlen(file) + 1);
+    strcpy(t_map->m_files[index][t_map->m_size[index]], file);
+    t_map->m_files[index][t_map->m_size[index]][strlen(file)] = '\0';
+    t_map->m_size[index]++;
 }

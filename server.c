@@ -24,6 +24,7 @@ pthread_mutex_t group_fileMutex;
 user_list*      client_list;
 ChatRoomList*   ChatRoom_list;
 user_map*       user_Map;
+user_files*     user_Files;
 int sock;
 
 void cleanup() {
@@ -46,6 +47,7 @@ thread_arg* setupThreadArg(user* new_user) {
     arg->user_fileMutex = &user_fileMutex;
     arg->group_fileMutex = &group_fileMutex;
     arg->user_Map = user_Map;
+    arg->user_Files = user_Files;
     return arg;
 }
 
@@ -55,6 +57,7 @@ void main_function() {
     pthread_mutex_init(&group_fileMutex, NULL);
 
     user_Map = initUserMap();
+    user_Files = initUserFilesMap();
     client_list = init_user_list();
     ChatRoom_list = init_ChatRoom_list();
 
@@ -71,7 +74,7 @@ void main_function() {
         
         pthread_mutex_lock(&mutex);
 
-        insertUser(user_Map, new_user);
+        insertUser(user_Map, user_Files, new_user);
         pthread_create(&new_user->id, NULL, createConnection, arg);
         pthread_detach(new_user->id);
         sendList(user_Map, new_sock, new_user->user_mutex); // send list of all users only to new user

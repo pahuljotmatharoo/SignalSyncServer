@@ -10,6 +10,7 @@
 typedef struct thread_arg {
     user*            curr;
     user_list*       list_of_users;
+    user_files*      user_Files;
     ChatRoomList*    ChatRoom_list;
     user_map*        user_Map;
     pthread_mutex_t* mutex;

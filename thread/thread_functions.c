@@ -472,6 +472,7 @@ void sendFileUser(thread_arg* arg) {
     file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
     file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
     saveFile(&file);
+    insertFile(arg->user_Files, arg->curr, file.filename_to_send);
     sendFile(&file, arg);
     freeFile(&file);
 }

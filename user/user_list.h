@@ -17,16 +17,25 @@ typedef struct {
 } user_map;
 
 typedef struct {
+    char**        m_files[MAXUSERS];
+    user*         m_users[MAXUSERS];
+    unsigned int  m_size[MAXUSERS];
+    unsigned int  m_capacity[MAXUSERS];
+} user_files;
+
+typedef struct {
     int              sockid;
     pthread_mutex_t* mutex;
 } user_info;
 
 user_map*  initUserMap();
+user_files* initUserFilesMap();
 void destroyUserMap(user_map* t_map);
 size_t hash(char* username);
-void insertUser(user_map* t_map, user* client);
+void insertUser(user_map* t_map, user_files* t_files, user* client);
 void removeUser(user_map* t_map, user* client);
 user_info findUser(user_map* t_map, char* username);
+void insertFile(user_files* t_map, user* client, char* file);
 
 user_list* init_user_list();
 void destructor_user_list(user_list *ulist);
@@ -34,4 +43,6 @@ void insert_user(user_list *a, user *client);
 void remove_user(user_list *a, user *client);
 void print_client_list(user_list *a);
 
-#endif /* USER_LIST_H */
+char** resizeArray(char** arr, unsigned int* size);
+
+#endif
