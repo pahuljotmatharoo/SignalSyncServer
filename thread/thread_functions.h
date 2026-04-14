@@ -30,7 +30,7 @@ void roomMethodMessage(thread_arg* curr_user);
 void writeToFileUser(recieved_message* message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *fileMutex);
 void writeToFileGroup(recieved_message* message_to_send_group, char* group, char* username, pthread_mutex_t* group_fileMutex);
 void sendMessageUser(int current_user_socket, thread_arg* threadArg);
-void setupDir(char* username);
+void setupDir(char* username, char* base_path);
 char* setupFileStringUser(char *username, char* username_to_send);
 char* setupFileStringGroup(char* group);
 void sendUserRemoval(thread_arg* threadArg);
@@ -40,7 +40,7 @@ void processFile(recievedFile* file, uint32_t file_size);
 uint32_t recvSize(int sockid);
 void initFileDataStructure(recievedFile* file, uint32_t file_size);
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message);
-void saveFile(recievedFile* file);
+void saveFile(recievedFile* file, user* user);
 void downloadFile(thread_arg* threadArg);
 int getFileSize(FILE* fp);
 void sendFileGroup(thread_arg* arg);
@@ -49,5 +49,6 @@ void freeFile(recievedFile* file);
 void freeRecievedMessage(recieved_message* recievedMessage);
 void sendPrevConnectedUserMessages(user* user);
 void sendUsername(char* username, int size, int sockid);
+char* setupFileStringUserFile(char *username, char* user_to_send, char* filename);
 
 #endif /* THREAD_FUNCTIONS_H */

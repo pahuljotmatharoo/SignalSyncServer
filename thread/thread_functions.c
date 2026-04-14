@@ -409,10 +409,10 @@ void sendMessage(recieved_message* message_struct, int socket_id, int type_of_me
     send(socket_id, (message_struct->user_to_send), ntohl(message_struct->size_u), 0);
 }
 
-void setupDir(char* username) {
-    size_t len = strlen("logs/users/") + strlen(username) + 1;
+void setupDir(char* username, char* base_path) {
+    size_t len = strlen(base_path) + strlen(username) + 2;
     char* dir_location = malloc(len);
-    snprintf(dir_location, len, "logs/users/%s", username);
+    snprintf(dir_location, len, "%s/%s", base_path, username);
     mkdir(dir_location, 0776);
     free(dir_location);
 }
@@ -422,6 +422,16 @@ char* setupFileStringUser(char *username, char* username_to_send) {
     char* file_location = malloc(len);
     snprintf(file_location, len, "logs/users/%s/%s.txt", username, username_to_send);
     return file_location;
+}
+
+char* setupFileStringUserFile(char *username, char* user_to_send, char* filename) {
+    size_t len = strlen("logs/files/") + strlen(username) + strlen(user_to_send) + 2;
+    char* file_location = malloc(len);
+    snprintf(file_location, len, "logs/files/%s/%s", username, user_to_send);
+    mkdir(file_location, 0777);
+    char* file_location_new = realloc(file_location, len + strlen(filename) + 1);
+    snprintf(file_location_new, len + strlen(filename) + 1, "logs/files/%s/%s/%s", username, user_to_send, filename);
+    return file_location_new;
 }
 
 char* setupFileStringGroup(char* group) {
@@ -459,8 +469,9 @@ void processFile(recievedFile* file, uint32_t file_size) {
     file->size_f_name = strlen(file->filename_to_send) + 1;
 }
 
-void saveFile(recievedFile* file) {
-    FILE* fp = fopen(file->filename_to_send, "w");
+void saveFile(recievedFile* file, user* user) {
+    char* path = setupFileStringUserFile(user->username, file->user_to_send, file->filename_to_send);
+    FILE* fp = fopen(path, "w");
     fwrite(file->arr, 1, file->size_m, fp);
     fclose(fp);
 }
@@ -471,7 +482,7 @@ void sendFileUser(thread_arg* arg) {
     file.arr = recvExactMsg(&file.size_m, arg->curr->sockid);
     file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
     file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
-    saveFile(&file);
+    saveFile(&file, arg->curr);
     insertFile(arg->user_Files, arg->curr, file.filename_to_send);
     sendFile(&file, arg);
     freeFile(&file);
@@ -510,7 +521,7 @@ void sendFileGroup(thread_arg* arg) {
     file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
     file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
 
-    saveFile(&file);
+    saveFile(&file, arg->curr);
     sendFileGroupMethod(&file, arg);
     freeFile(&file);
 }
@@ -569,7 +580,8 @@ void *createConnection(void *arg) {
 
     thread_arg* curr_user = (thread_arg*)arg;
 
-    setupDir(curr_user->curr->username);
+    setupDir(curr_user->curr->username, "logs/users");
+    setupDir(curr_user->curr->username, "logs/files");
 
     int current_user_socket = curr_user->curr->sockid;
 
