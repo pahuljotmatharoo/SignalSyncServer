@@ -23,6 +23,55 @@
 #define USERNAME_LENGTH 50
 #define message_length 128
 
+void sendAllUserFiles(user* user) {
+    int type_of_message = FILE_SEND;
+    char base_string[128] = "logs/files/";
+    struct dirent *entry;
+    
+    DIR *dp = opendir(base_string);
+
+    if(dp == NULL) {return;}
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+        char inner_path[256];
+        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+
+        DIR *dp_inner = opendir(inner_path);
+        if(dp_inner == NULL) {return;}
+
+        struct dirent* inner_entry;
+        while ((inner_entry = readdir(dp_inner)) != NULL) {
+            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                continue;
+
+            if(strncmp(inner_entry->d_name, user->username, user->username_length) == 0) {
+                char inner_inner_path[256];
+                sprintf(inner_inner_path, "%s/%s", inner_path, inner_entry->d_name);
+
+                DIR *dp_inner_inner = opendir(inner_inner_path);
+                if(dp_inner_inner == NULL) {return;}
+
+                struct dirent* inner_inner_entry;
+                while((inner_inner_entry = readdir(dp_inner_inner)) != NULL) {
+                    if (strcmp(inner_inner_entry->d_name, ".") == 0 || strcmp(inner_inner_entry->d_name, "..") == 0)
+                        continue;
+                    char filename[50];
+                    strncpy(filename, inner_inner_entry->d_name, strlen(inner_inner_entry->d_name));
+                    filename[strlen(inner_inner_entry->d_name)] = '\0';
+                    send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+                    sendUsername(inner_inner_entry->d_name, strlen(inner_inner_entry->d_name) + 1, user->sockid);
+                    sendUsername(inner_inner_entry->d_name, strlen(inner_inner_entry->d_name) + 1, user->sockid);
+                }
+                closedir(dp_inner_inner);
+            }
+        }
+        closedir(dp_inner);
+    }
+    closedir(dp);
+}
+
 void sendPrevConnectedUserMessages(user* user) {
     // 1. Send file name (its the users name)
     // 2. Send all file content
@@ -44,7 +93,7 @@ void sendPrevConnectedUserMessages(user* user) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
 
-        char path[128];
+        char path[256];
         char filename[50];
         strncpy(filename, entry->d_name, strlen(entry->d_name) - 4);
         filename[strlen(entry->d_name) - 3] = '\0';

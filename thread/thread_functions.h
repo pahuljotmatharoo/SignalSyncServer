@@ -50,5 +50,6 @@ void freeRecievedMessage(recieved_message* recievedMessage);
 void sendPrevConnectedUserMessages(user* user);
 void sendUsername(char* username, int size, int sockid);
 char* setupFileStringUserFile(char *username, char* user_to_send, char* filename);
+void sendAllUserFiles(user* user);
 
 #endif /* THREAD_FUNCTIONS_H */

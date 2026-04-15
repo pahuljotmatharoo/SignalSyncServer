@@ -93,6 +93,18 @@ void destroyUserMap(user_map* t_map) {
     free(t_map);
 }
 
+void destroyUserFileMap(user_files* map) {
+    for(size_t i = 0; i < MAXUSERS; i++) {
+        if(map->m_files[i]) {
+            for(int j = 0; j < map->m_size[i]; j++) {
+                free(map->m_files[i][j]);
+            }
+            free(map->m_files[i]);
+        }
+    }
+    free(map);
+}
+
 size_t hash(char* username) {
     size_t len = strlen(username);
     size_t sum = 0;

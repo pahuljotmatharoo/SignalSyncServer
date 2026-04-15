@@ -31,6 +31,7 @@ void cleanup() {
     destructor_user_list(client_list);
     destructor_ChatRoom_list(ChatRoom_list);
     destroyUserMap(user_Map);
+    destroyUserFileMap(user_Files);
     pthread_mutex_destroy(&mutex);
     pthread_mutex_destroy(&user_fileMutex);
     pthread_mutex_destroy(&group_fileMutex);
@@ -82,7 +83,7 @@ void main_function() {
         sendUserJoin(user_Map, new_user); // send that THIS user joined to every connected user (except this new user)
         sendPrevConnectedUserMessages(new_user);
         sendAllGroupMessages(new_user);
-
+        sendAllUserFiles(new_user);
         pthread_mutex_unlock(&mutex);
     }
 }

@@ -31,6 +31,7 @@ typedef struct {
 user_map*  initUserMap();
 user_files* initUserFilesMap();
 void destroyUserMap(user_map* t_map);
+void destroyUserFileMap(user_files* map);
 size_t hash(char* username);
 void insertUser(user_map* t_map, user_files* t_files, user* client);
 void removeUser(user_map* t_map, user* client);
