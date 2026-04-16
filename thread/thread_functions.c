@@ -8,6 +8,20 @@
 #include "thread_functions.h"
 #include "../user/user_list.h"
 #include "../messages/messages.h"
+enum Network {
+    MSG_SEND = 1,
+    MSG_LIST = 2,
+    MSG_EXIT = 3,
+    USER_EXIT = 4,
+    ROOM_CREATE = 5,
+    ROOM_MSG = 6,
+    ROOM_LIST = 7,
+    FILE_SEND = 8,
+    FILE_GROUP = 9,
+    USER_JOIN = 10,
+    FILE_DOWNLOAD = 11,
+    USER_CHATS = 12,
+};
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
