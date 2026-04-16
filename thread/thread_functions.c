@@ -25,7 +25,8 @@
 
 void sendAllUserFiles(user* user) {
     int type_of_message = FILE_SEND;
-    char base_string[128] = "logs/files/";
+    char base_string[128];
+    sprintf(base_string, "logs/files/%s", user->username);
     struct dirent *entry;
     
     DIR *dp = opendir(base_string);
@@ -33,42 +34,29 @@ void sendAllUserFiles(user* user) {
     if(dp == NULL) {return;}
 
     while ((entry = readdir(dp)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
-        char inner_path[256];
-        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
-
-        DIR *dp_inner = opendir(inner_path);
-        if(dp_inner == NULL) {return;}
-
-        struct dirent* inner_entry;
-        while ((inner_entry = readdir(dp_inner)) != NULL) {
-            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
-                continue;
-
-            if(strncmp(inner_entry->d_name, user->username, user->username_length) == 0) {
-                char inner_inner_path[256];
-                sprintf(inner_inner_path, "%s/%s", inner_path, inner_entry->d_name);
-
-                DIR *dp_inner_inner = opendir(inner_inner_path);
-                if(dp_inner_inner == NULL) {return;}
-
-                struct dirent* inner_inner_entry;
-                while((inner_inner_entry = readdir(dp_inner_inner)) != NULL) {
-                    if (strcmp(inner_inner_entry->d_name, ".") == 0 || strcmp(inner_inner_entry->d_name, "..") == 0)
-                        continue;
-                    char filename[50];
-                    strncpy(filename, inner_inner_entry->d_name, strlen(inner_inner_entry->d_name));
-                    filename[strlen(inner_inner_entry->d_name)] = '\0';
-                    send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
-                    sendUsername(inner_inner_entry->d_name, strlen(inner_inner_entry->d_name) + 1, user->sockid);
-                    sendUsername(inner_inner_entry->d_name, strlen(inner_inner_entry->d_name) + 1, user->sockid);
-                }
-                closedir(dp_inner_inner);
-            }
         }
-        closedir(dp_inner);
-    }
+
+            char inner_path[256];
+            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+
+            DIR *dp_inner = opendir(inner_path);
+            if(dp_inner == NULL) {return;}
+
+            struct dirent* inner_entry;
+            while((inner_entry = readdir(dp_inner)) != NULL) {
+                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                    continue;
+                char filename[50];
+                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+                filename[strlen(inner_entry->d_name)] = '\0';
+                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+            }
+            closedir(dp_inner);
+        }
     closedir(dp);
 }
 
@@ -476,10 +464,10 @@ char* setupFileStringUser(char *username, char* username_to_send) {
 char* setupFileStringUserFile(char *username, char* user_to_send, char* filename) {
     size_t len = strlen("logs/files/") + strlen(username) + strlen(user_to_send) + 2;
     char* file_location = malloc(len);
-    snprintf(file_location, len, "logs/files/%s/%s", username, user_to_send);
+    snprintf(file_location, len, "logs/files/%s/%s", user_to_send, username);
     mkdir(file_location, 0777);
     char* file_location_new = realloc(file_location, len + strlen(filename) + 1);
-    snprintf(file_location_new, len + strlen(filename) + 1, "logs/files/%s/%s/%s", username, user_to_send, filename);
+    snprintf(file_location_new, len + strlen(filename) + 1, "logs/files/%s/%s/%s",user_to_send, username, filename);
     return file_location_new;
 }
 
