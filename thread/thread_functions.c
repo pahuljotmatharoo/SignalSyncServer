@@ -601,8 +601,15 @@ void downloadFile(thread_arg* threadArg) {
     uint32_t filename_size = 0;
     char* filename = recvExactMsg(&filename_size, threadArg->curr->sockid);
     filename[filename_size] = '\0';
+
+    uint32_t username_size = 0;
+    char* username = recvExactMsg(&username_size, threadArg->curr->sockid);
+    username[username_size] = '\0';
+
+    char path[128];
+    sprintf(path, "logs/files/%s/%s/%s", threadArg->curr->username, username, filename);
     
-    FILE* fp = fopen(filename, "r");
+    FILE* fp = fopen(path, "r");
     if(fp == NULL) {return;}
 
     int size = getFileSize(fp);
@@ -645,7 +652,7 @@ void *createConnection(void *arg) {
 
     while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
 
-        uint32_t type   = ntohl(hdr);
+        enum Network type = ntohl(hdr);
 
         //the client is sending us information
         if(type == MSG_SEND) {
