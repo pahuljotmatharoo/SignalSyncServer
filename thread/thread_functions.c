@@ -492,6 +492,14 @@ char* setupFileStringGroup(char* group) {
     return file_location;
 }
 
+char* setupFileStringGroupFile(char* group) {
+    size_t len = strlen("logs/group_files/") + strlen(group) + 1;
+    char* file_location = malloc(len);
+    snprintf(file_location, len, "logs/group_files/%s", group);
+    mkdir(file_location, 0777);
+    return file_location;
+}
+
 void sendUserRemoval(thread_arg* threadArg) {
     user_map* t_map = threadArg->user_Map;
     int type_of_message_list = USER_EXIT;
@@ -525,6 +533,18 @@ void saveFile(recievedFile* file, user* user) {
     FILE* fp = fopen(path, "w");
     fwrite(file->arr, 1, file->size_m, fp);
     fclose(fp);
+    free(path);
+}
+
+void saveFileGroup(recievedFile* file) {
+    char file_path[256];
+    char* path = setupFileStringGroupFile(file->user_to_send);
+    sprintf(file_path, "%s/%s", path, file->filename_to_send);
+    FILE* fp = fopen(file_path, "w");
+    if(fp == NULL) {return;}
+    fwrite(file->arr, 1, file->size_m, fp);
+    fclose(fp);
+    free(path);
 }
 
 
@@ -572,7 +592,7 @@ void sendFileGroup(thread_arg* arg) {
     file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
     file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
 
-    saveFile(&file, arg->curr);
+    saveFileGroup(&file);
     sendFileGroupMethod(&file, arg);
     freeFile(&file);
 }
