@@ -32,8 +32,9 @@ enum Network {
 #define FILE_SEND 8
 #define FILE_GROUP 9
 #define USER_JOIN 10
-#define FILE_DOWNLOAD 11
+#define FILE_DOWNLOAD_USER 11
 #define USER_CHATS 12
+#define FILE_DOWNLOAD_GROUP 13
 #define USERNAME_LENGTH 50
 #define message_length 128
 
@@ -615,7 +616,7 @@ int getFileSize(FILE* fp) {
     return size;
 }
 
-void downloadFile(thread_arg* threadArg) {
+void downloadFileUser(thread_arg* threadArg) {
     pthread_mutex_lock(threadArg->curr->user_mutex);
 
     uint32_t filename_size = 0;
@@ -638,7 +639,41 @@ void downloadFile(thread_arg* threadArg) {
 
     fread(file_data, 1, size, fp);
 
-    int type_of_message = FILE_DOWNLOAD;
+    int type_of_message = FILE_DOWNLOAD_USER;
+    send(threadArg->curr->sockid, &type_of_message, sizeof(type_of_message), 0);
+    sendSize(size, threadArg->curr->sockid);
+    sendAll(file_data, threadArg->curr->sockid, size);
+
+    pthread_mutex_unlock(threadArg->curr->user_mutex);
+
+    fclose(fp);
+    free(filename);
+}
+
+void downloadFileGroup(thread_arg* threadArg) {
+    pthread_mutex_lock(threadArg->curr->user_mutex);
+
+    uint32_t filename_size = 0;
+    char* filename = recvExactMsg(&filename_size, threadArg->curr->sockid);
+    filename[filename_size] = '\0';
+
+    uint32_t group_name_size = 0;
+    char* group_name = recvExactMsg(&group_name_size, threadArg->curr->sockid);
+    group_name[group_name_size] = '\0';
+
+    char path[128];
+    sprintf(path, "logs/group_files/%s/%s", group_name, filename);
+    
+    FILE* fp = fopen(path, "r");
+    if(fp == NULL) {return;}
+
+    int size = getFileSize(fp);
+
+    char* file_data = malloc(size);
+
+    fread(file_data, 1, size, fp);
+
+    int type_of_message = FILE_DOWNLOAD_GROUP;
     send(threadArg->curr->sockid, &type_of_message, sizeof(type_of_message), 0);
     sendSize(size, threadArg->curr->sockid);
     sendAll(file_data, threadArg->curr->sockid, size);
@@ -696,8 +731,11 @@ void *createConnection(void *arg) {
         else if(type == FILE_GROUP) {
             sendFileGroup(curr_user);
         }
-        else if(type == FILE_DOWNLOAD) {
-            downloadFile(curr_user);
+        else if(type == FILE_DOWNLOAD_USER) {
+            downloadFileUser(curr_user);
+        }
+        else if(type == FILE_DOWNLOAD_GROUP) {
+            downloadFileGroup(curr_user);
         }
     }
 
