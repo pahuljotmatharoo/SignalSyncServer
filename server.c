@@ -84,6 +84,7 @@ void main_function() {
         sendPrevConnectedUserMessages(new_user);
         sendAllGroupMessages(new_user);
         sendAllUserFiles(new_user);
+        sendAllGroupFiles(new_user); // figure out why it doesn't send without breakpoint
         pthread_mutex_unlock(&mutex);
     }
 }

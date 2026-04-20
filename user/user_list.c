@@ -120,7 +120,6 @@ void insertUser(user_map* t_map, user_files* t_files, user *client) {
     while(t_map->m_userArr[index] != NULL) {
         index++;
     }
-
     t_map->m_userArr[index] = client;
     t_files->m_users[index] = client;
     t_map->m_size++;

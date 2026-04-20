@@ -38,6 +38,46 @@ enum Network {
 #define USERNAME_LENGTH 50
 #define message_length 128
 
+void sendAllGroupFiles(user* user) {
+    int type_of_message = FILE_GROUP;
+    char base_string[128];
+    sprintf(base_string, "logs/group_files");
+
+    struct dirent *entry;
+    DIR *dp = opendir(base_string);
+
+    if(dp == NULL) {return;}
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+            char inner_path[256];
+            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+
+            DIR *dp_inner = opendir(inner_path);
+            if(dp_inner == NULL) {return;}
+
+            struct dirent* inner_entry;
+            while((inner_entry = readdir(dp_inner)) != NULL) {
+                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                    continue;
+                char filename[50];
+                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+                filename[strlen(inner_entry->d_name)] = '\0';
+                pthread_mutex_lock(user->user_mutex);
+                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+                sendUsername("Group", strlen("Group" + 1), user->sockid);
+                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+                pthread_mutex_unlock(user->user_mutex);
+            }
+            closedir(dp_inner);
+        }
+    closedir(dp);
+}
+
 void sendAllUserFiles(user* user) {
     int type_of_message = FILE_SEND;
     char base_string[128];
@@ -66,9 +106,12 @@ void sendAllUserFiles(user* user) {
                 char filename[50];
                 strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
                 filename[strlen(inner_entry->d_name)] = '\0';
+                pthread_mutex_lock(user->user_mutex);
                 send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
                 sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
                 sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+                pthread_mutex_unlock(user->user_mutex);
             }
             closedir(dp_inner);
         }
@@ -117,10 +160,14 @@ void sendPrevConnectedUserMessages(user* user) {
             message_struct.user_to_send = string_split[0];
             message_struct.size_u = htonl(strlen(string_split[0]) + 1);
 
+            pthread_mutex_lock(user->user_mutex);
+
             send(user->sockid, &(message_struct.size_m), sizeof(uint32_t), 0);
             send(user->sockid, (message_struct.arr), ntohl(message_struct.size_m), 0);
             send(user->sockid, &(message_struct.size_u), sizeof(uint32_t), 0);
             send(user->sockid, (message_struct.user_to_send), ntohl(message_struct.size_u), 0);
+
+            pthread_mutex_unlock(user->user_mutex);
 
             free(string_split[0]);
             free(string_split[1]);
@@ -171,9 +218,13 @@ void sendAllGroupMessages(user *new_user) {
             recvMsg.user_to_send = string_split[0];
             recvMsg.size_u = htonl(strlen(string_split[0]) + 1);
 
+            pthread_mutex_lock(new_user->user_mutex);
+
             sendMessage(&recvMsg, new_user->sockid, type_of_message);
             send(new_user->sockid, &group_name_length, sizeof(int), 0);
             send(new_user->sockid, group_name, ntohl(group_name_length), 0); // this is send full dir & not group name
+
+            pthread_mutex_unlock(new_user->user_mutex);
 
             free(string_split[0]);
             free(string_split[1]);
