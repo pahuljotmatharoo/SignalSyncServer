@@ -25,7 +25,7 @@ typedef enum {
 } Network;
 
 #define USERNAME_LENGTH 50
-#define message_length 128
+#define MESSAGE_LENGTH 128
 
 void sendAllGroupFiles(user* user) {
     int type_of_message = FILE_GROUP;
@@ -113,7 +113,7 @@ void sendPrevConnectedUserMessages(user* user) {
     // 3. Send "END" string to signify end
     int type_of_message = USER_CHATS;
     char base_string[50];
-    char buf[USERNAME_LENGTH + message_length];
+    char buf[USERNAME_LENGTH + MESSAGE_LENGTH];
     snprintf(base_string, sizeof(base_string), "logs/users/%s", user->username);
 
     struct dirent *entry;
@@ -169,10 +169,10 @@ void sendPrevConnectedUserMessages(user* user) {
     closedir(dp);
 }
 
-char** parseFileString(char message[USERNAME_LENGTH + message_length]) {
+char** parseFileString(char message[USERNAME_LENGTH + MESSAGE_LENGTH]) {
     char** return_strings = malloc(2);
     char* left = malloc(USERNAME_LENGTH);
-    char* right = malloc(message_length);
+    char* right = malloc(MESSAGE_LENGTH);
     sscanf(message, "%[^:]: %[^\n]", left, right);
     return_strings[0] = left;
     return_strings[1] = right;
@@ -190,7 +190,7 @@ void sendAllGroupMessages(user *new_user) {
 
         if (fp == NULL) { continue; }
 
-        char buf[USERNAME_LENGTH + message_length];
+        char buf[USERNAME_LENGTH + MESSAGE_LENGTH];
 
         char group_name[50];
 

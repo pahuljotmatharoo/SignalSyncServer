@@ -23,7 +23,7 @@ void *createConnection(void *arg);
 void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex);
 void sendAllGroupMessages(user *new_user);
 void sendUserJoin(user_map* t_map, user* new_user);
-char** parseFileString(char message[USERNAME_LENGTH + message_length]);
+char** parseFileString(char message[USERNAME_LENGTH + MESSAGE_LENGTH]);
 void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* socket_mutex);
 void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, int size);
 void roomMethodMessage(thread_arg* curr_user);

@@ -2,18 +2,18 @@
 #define MESSAGES_H
 #include <stdint.h>
 #define USERNAME_LENGTH 50
-#define message_length 128
+#define MESSAGE_LENGTH 128
 #define max_users 10
 
 //message to send to the user
 typedef struct message_to_send {
-    char arr[message_length];
+    char arr[MESSAGE_LENGTH];
     char username[USERNAME_LENGTH];
 } message_s;
 
 //message to send to the user (group)
 typedef struct message_to_send_group {
-    char arr[message_length];
+    char arr[MESSAGE_LENGTH];
     char username[USERNAME_LENGTH];
     char groupName[USERNAME_LENGTH];
 } message_s_group;
