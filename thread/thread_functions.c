@@ -8,8 +8,8 @@
 #include "thread_functions.h"
 #include "../user/user_list.h"
 #include "../messages/messages.h"
-enum Network {
-    MSG_SEND = 1,
+typedef enum {
+    MSG_USER = 1,
     MSG_LIST = 2,
     MSG_EXIT = 3,
     USER_EXIT = 4,
@@ -19,22 +19,11 @@ enum Network {
     FILE_SEND = 8,
     FILE_GROUP = 9,
     USER_JOIN = 10,
-    FILE_DOWNLOAD = 11,
+    FILE_DOWNLOAD_USER = 11,
     USER_CHATS = 12,
-};
-#define MSG_SEND 1
-#define MSG_LIST 2
-#define MSG_EXIT 3
-#define USER_EXIT 4
-#define ROOM_CREATE 5
-#define ROOM_MSG 6
-#define ROOM_LIST 7
-#define FILE_SEND 8
-#define FILE_GROUP 9
-#define USER_JOIN 10
-#define FILE_DOWNLOAD_USER 11
-#define USER_CHATS 12
-#define FILE_DOWNLOAD_GROUP 13
+    FILE_DOWNLOAD_GROUP = 13
+} Network;
+
 #define USERNAME_LENGTH 50
 #define message_length 128
 
@@ -53,28 +42,28 @@ void sendAllGroupFiles(user* user) {
             continue;
         }
 
-            char inner_path[256];
-            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+        char inner_path[256];
+        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
 
-            DIR *dp_inner = opendir(inner_path);
-            if(dp_inner == NULL) {return;}
+        DIR *dp_inner = opendir(inner_path);
+        if(dp_inner == NULL) {return;}
 
-            struct dirent* inner_entry;
-            while((inner_entry = readdir(dp_inner)) != NULL) {
-                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
-                    continue;
-                char filename[50];
-                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
-                filename[strlen(inner_entry->d_name)] = '\0';
-                pthread_mutex_lock(user->user_mutex);
-                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
-                sendUsername("Group", strlen("Group" + 1), user->sockid);
-                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                pthread_mutex_unlock(user->user_mutex);
-            }
-            closedir(dp_inner);
+        struct dirent* inner_entry;
+        while((inner_entry = readdir(dp_inner)) != NULL) {
+            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                continue;
+            char filename[50];
+            strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+            filename[strlen(inner_entry->d_name)] = '\0';
+            pthread_mutex_lock(user->user_mutex);
+            send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+            sendUsername("Group", strlen("Group" + 1), user->sockid);
+            sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+            sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+            pthread_mutex_unlock(user->user_mutex);
         }
+        closedir(dp_inner);
+    }
     closedir(dp);
 }
 
@@ -93,28 +82,28 @@ void sendAllUserFiles(user* user) {
             continue;
         }
 
-            char inner_path[256];
-            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+        char inner_path[256];
+        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
 
-            DIR *dp_inner = opendir(inner_path);
-            if(dp_inner == NULL) {return;}
+        DIR *dp_inner = opendir(inner_path);
+        if(dp_inner == NULL) {return;}
 
-            struct dirent* inner_entry;
-            while((inner_entry = readdir(dp_inner)) != NULL) {
-                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
-                    continue;
-                char filename[50];
-                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
-                filename[strlen(inner_entry->d_name)] = '\0';
-                pthread_mutex_lock(user->user_mutex);
-                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
-                pthread_mutex_unlock(user->user_mutex);
-            }
-            closedir(dp_inner);
+        struct dirent* inner_entry;
+        while((inner_entry = readdir(dp_inner)) != NULL) {
+            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                continue;
+            char filename[50];
+            strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+            filename[strlen(inner_entry->d_name)] = '\0';
+            pthread_mutex_lock(user->user_mutex);
+            send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+            sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+            sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+            sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+            pthread_mutex_unlock(user->user_mutex);
         }
+        closedir(dp_inner);
+    }
     closedir(dp);
 }
 
@@ -491,7 +480,7 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) {
     recievedMessage.size_u = htonl(recievedMessage.size_u + 1);
 
     pthread_mutex_lock(info.mutex);
-    sendMessage(&recievedMessage, info.sockid, MSG_SEND);
+    sendMessage(&recievedMessage, info.sockid, MSG_USER);
     pthread_mutex_unlock(info.mutex);
 
     freeRecievedMessage(&recievedMessage);
@@ -758,10 +747,9 @@ void *createConnection(void *arg) {
 
     while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
 
-        enum Network type = ntohl(hdr);
+        Network type = ntohl(hdr);
 
-        //the client is sending us information
-        if(type == MSG_SEND) {
+        if(type == MSG_USER) {
             sendMessageUser(current_user_socket, curr_user);
         }
 
