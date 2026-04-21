@@ -11,8 +11,6 @@
 #include "thread/thread_functions.h"
 #include "messages/messages.h"
 #include "chatroom/chat_room_list.h"
-#define MSG_LIST 2
-#define MSG_EXIT 3
 
 // Move files into their own directory & devise a way to assign unique id per file
 
