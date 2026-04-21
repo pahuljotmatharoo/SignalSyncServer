@@ -638,9 +638,9 @@ void sendFileGroup(thread_arg* arg) {
     freeFile(&file);
 }
 
-void handleRoomCreation(thread_arg* curr_user, int current_user_socket) {
+void handleRoomCreation(thread_arg* curr_user) {
     ChatRoom* newRoom = malloc(sizeof(ChatRoom));
-    newRoom->ChatRoomName = recvExactMsg(&newRoom->name_length, current_user_socket);
+    newRoom->ChatRoomName = recvExactMsg(&newRoom->name_length, curr_user->curr->sockid);
 
     pthread_mutex_lock(curr_user->mutex);
     insert_ChatRoom(curr_user->ChatRoom_list, newRoom);
@@ -729,8 +729,6 @@ void *createConnection(void *arg) {
     int n;
     uint32_t hdr;
 
-    message_s_group *message_to_send_group = (message_s_group*) malloc(sizeof(message_s_group));
-
     thread_arg* curr_user = (thread_arg*)arg;
 
     setupDir(curr_user->curr->username, "logs/users");
@@ -759,7 +757,7 @@ void *createConnection(void *arg) {
         }
 
         else if(type == ROOM_CREATE) {
-            handleRoomCreation(curr_user, current_user_socket);
+            handleRoomCreation(curr_user);
         }
         else if(type == ROOM_MSG) {
             roomMethodMessage(curr_user);
@@ -788,6 +786,5 @@ void *createConnection(void *arg) {
     pthread_mutex_unlock(curr_user->mutex);
 
     free(arg);
-    free(message_to_send_group);
     pthread_exit(NULL);
 }
