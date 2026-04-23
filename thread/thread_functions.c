@@ -8,6 +8,21 @@
 #include "thread_functions.h"
 #include "../user/user_list.h"
 #include "../messages/messages.h"
+
+// TODO: 
+// 1. Remove constants & only use the enum
+
+// 2. Make more reuseable methods to be more DRY
+//    List: SendFileGroup should reuse some SendFileUser functionality
+//          DownloadUserFile & DownloadGroupFile are similar
+//          Some of these directory functions seem to overlap
+//          Need to have clearer base functions to use for network interaction
+
+// 3. Remove depricated code
+
+// Functionality to add:
+//      1. ...
+
 enum Network {
     MSG_SEND = 1,
     MSG_LIST = 2,
@@ -739,8 +754,6 @@ void downloadFileGroup(thread_arg* threadArg) {
 void *createConnection(void *arg) {
     int n;
     uint32_t hdr;
-
-    message_s_group *message_to_send_group = (message_s_group*) malloc(sizeof(message_s_group));
 
     thread_arg* curr_user = (thread_arg*)arg;
 
