@@ -109,7 +109,6 @@ void sendAllUserFiles(user* user) {
                 pthread_mutex_lock(user->user_mutex);
                 send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
                 sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
                 sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
                 pthread_mutex_unlock(user->user_mutex);
             }
@@ -118,6 +117,7 @@ void sendAllUserFiles(user* user) {
     closedir(dp);
 }
 
+// this is slightly wrong, fix this
 void sendPrevConnectedUserMessages(user* user) {
     // 1. Send file name (its the users name)
     // 2. Send all file content
@@ -334,7 +334,7 @@ void writeToFileUser(recieved_message* message_to_send_user, char* threadUsernam
     else {
         fseek(fp2, 0, SEEK_END);
         fprintf(fp2, "%s", threadUsername);
-        fprintf(fp2, " : ");
+        fprintf(fp2, ": ");
         fprintf(fp2, "%s", message_to_send_user->arr);
         fprintf(fp2, "\n");
         fclose(fp2);
