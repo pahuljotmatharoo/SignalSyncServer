@@ -813,6 +813,5 @@ void *createConnection(void *arg) {
     pthread_mutex_unlock(curr_user->mutex);
 
     free(arg);
-    free(message_to_send_group);
     pthread_exit(NULL);
 }

@@ -5,13 +5,6 @@
 #define message_length 128
 #define max_users 10
 
-//message to send to the user
-typedef struct message_to_send {
-    char arr[message_length];
-    char username[USERNAME_LENGTH];
-} message_s;
-
-
 typedef struct message_recieved {
     char* arr;
     char* user_to_send;
@@ -37,7 +30,4 @@ typedef struct Msg{
     uint32_t type;    // message type
     uint32_t length;  // payload length
 } MsgHeader;
-
-void print_data(message_s *a);
-
 #endif
