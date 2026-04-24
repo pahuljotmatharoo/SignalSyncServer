@@ -1,5 +1,6 @@
 #ifndef MESSAGES_H
 #define MESSAGES_H
+
 #include <stdint.h>
 #define USERNAME_LENGTH 50
 #define message_length 128
@@ -25,9 +26,4 @@ typedef struct list {
     uint32_t size;
     char arr[max_users][USERNAME_LENGTH];
 } client_list_s;
-
-typedef struct Msg{
-    uint32_t type;    // message type
-    uint32_t length;  // payload length
-} MsgHeader;
 #endif
