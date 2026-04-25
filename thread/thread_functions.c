@@ -23,6 +23,8 @@
 // Functionality to add:
 //      1. ...
 
+// Ensure that we are using sendall for all primative sends
+
 enum Network {
     MSG_SEND = 1,
     MSG_LIST = 2,
@@ -64,32 +66,31 @@ void sendAllGroupFiles(user* user) {
     if(dp == NULL) {return;}
 
     while ((entry = readdir(dp)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
+        
+        char inner_path[256];
+        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+
+        DIR *dp_inner = opendir(inner_path);
+        if(dp_inner == NULL) {return;}
+
+        struct dirent* inner_entry;
+        while((inner_entry = readdir(dp_inner)) != NULL) {
+            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                continue;
+            char filename[50];
+            strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+            filename[strlen(inner_entry->d_name)] = '\0';
+            pthread_mutex_lock(user->user_mutex);
+            send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+            sendUsername("Group", strlen("Group" + 1), user->sockid);
+            sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+            sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+            pthread_mutex_unlock(user->user_mutex);
         }
-
-            char inner_path[256];
-            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
-
-            DIR *dp_inner = opendir(inner_path);
-            if(dp_inner == NULL) {return;}
-
-            struct dirent* inner_entry;
-            while((inner_entry = readdir(dp_inner)) != NULL) {
-                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
-                    continue;
-                char filename[50];
-                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
-                filename[strlen(inner_entry->d_name)] = '\0';
-                pthread_mutex_lock(user->user_mutex);
-                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
-                sendUsername("Group", strlen("Group" + 1), user->sockid);
-                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                pthread_mutex_unlock(user->user_mutex);
-            }
-            closedir(dp_inner);
-        }
+        closedir(dp_inner);
+    }
     closedir(dp);
 }
 
@@ -104,31 +105,30 @@ void sendAllUserFiles(user* user) {
     if(dp == NULL) {return;}
 
     while ((entry = readdir(dp)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
+
+        char inner_path[256];
+        sprintf(inner_path, "%s/%s", base_string, entry->d_name);
+
+        DIR *dp_inner = opendir(inner_path);
+        if(dp_inner == NULL) {return;}
+
+        struct dirent* inner_entry;
+        while((inner_entry = readdir(dp_inner)) != NULL) {
+            if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
+                continue;
+            char filename[50];
+            strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
+            filename[strlen(inner_entry->d_name)] = '\0';
+            pthread_mutex_lock(user->user_mutex);
+            send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
+            sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
+            sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
+            pthread_mutex_unlock(user->user_mutex);
         }
-
-            char inner_path[256];
-            sprintf(inner_path, "%s/%s", base_string, entry->d_name);
-
-            DIR *dp_inner = opendir(inner_path);
-            if(dp_inner == NULL) {return;}
-
-            struct dirent* inner_entry;
-            while((inner_entry = readdir(dp_inner)) != NULL) {
-                if (strcmp(inner_entry->d_name, ".") == 0 || strcmp(inner_entry->d_name, "..") == 0)
-                    continue;
-                char filename[50];
-                strncpy(filename, inner_entry->d_name, strlen(inner_entry->d_name));
-                filename[strlen(inner_entry->d_name)] = '\0';
-                pthread_mutex_lock(user->user_mutex);
-                send(user->sockid, &type_of_message, sizeof(type_of_message), 0);
-                sendUsername(entry->d_name, strlen(entry->d_name) + 1, user->sockid);
-                sendUsername(inner_entry->d_name, strlen(inner_entry->d_name) + 1, user->sockid);
-                pthread_mutex_unlock(user->user_mutex);
-            }
-            closedir(dp_inner);
-        }
+        closedir(dp_inner);
+    }
     closedir(dp);
 }
 
@@ -306,6 +306,7 @@ void writeToFileGroup(recieved_message* message_to_send_group, char* group, char
 
     char* filename = setupFileStringGroup(group); // one we are sending to
 
+    // this can definately be a function on its own
     FILE* fp = fopen(filename, "a");
     fseek(fp, 0, SEEK_END);
     fprintf(fp, "%s", username);
@@ -432,6 +433,7 @@ void roomMethodMessage(thread_arg* curr_user) {
     char* group = recvExactMsg(&group_size , curr_user->curr->sockid);
     group[group_size] = '\0';
 
+    //maybe a function?
     recievedMessage.user_to_send = malloc(strlen(curr_user->curr->username) + 2);
     memcpy(recievedMessage.user_to_send, curr_user->curr->username, strlen(curr_user->curr->username));
     recievedMessage.user_to_send[strlen(curr_user->curr->username) + 1] = '\0';
@@ -441,6 +443,7 @@ void roomMethodMessage(thread_arg* curr_user) {
 
     int group_length = htonl(strlen(group) + 1);
 
+    //we should not have to do this
     recievedMessage.size_m = htonl(recievedMessage.size_m);
     recievedMessage.size_u = htonl(recievedMessage.size_u);
 
@@ -614,7 +617,6 @@ void saveFileGroup(recievedFile* file) {
     free(path);
 }
 
-
 void sendFileUser(thread_arg* arg) {
     recievedFile file;
     file.arr = recvExactMsg(&file.size_m, arg->curr->sockid);
@@ -682,6 +684,7 @@ int getFileSize(FILE* fp) {
     return size;
 }
 
+// group & user are too similar, we can probably reuse them
 void downloadFileUser(thread_arg* threadArg) {
     pthread_mutex_lock(threadArg->curr->user_mutex);
 
@@ -773,16 +776,13 @@ void *createConnection(void *arg) {
 
         enum Network type = ntohl(hdr);
 
-        //the client is sending us information
         if(type == MSG_SEND) {
             sendMessageUser(current_user_socket, curr_user);
         }
-
         else if(type == MSG_EXIT) {
             printf("Closing Connection. \n");
             break;
         }
-
         else if(type == ROOM_CREATE) {
             handleRoomCreation(curr_user, current_user_socket);
         }
