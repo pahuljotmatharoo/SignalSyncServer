@@ -9,6 +9,8 @@
 #include "../user/user_list.h"
 #include "../messages/messages.h"
 
+// fix issue where sending messages is not proper
+
 // TODO: 
 // 1. Remove constants & only use the enum
 
@@ -25,7 +27,7 @@
 
 // Ensure that we are using sendall for all primative sends
 
-enum Network {
+typedef enum {
     MSG_SEND = 1,
     MSG_LIST = 2,
     MSG_EXIT = 3,
@@ -38,7 +40,7 @@ enum Network {
     USER_JOIN = 10,
     FILE_DOWNLOAD = 11,
     USER_CHATS = 12,
-};
+} Network;
 #define MSG_SEND 1
 #define MSG_LIST 2
 #define MSG_EXIT 3
@@ -300,19 +302,13 @@ void sendFile(recievedFile* file, thread_arg* threadArg) {
     pthread_mutex_unlock(info.mutex);
 }
 
-//wish we had templates in C
 void writeToFileGroup(recieved_message* message_to_send_group, char* group, char* username, pthread_mutex_t *group_fileMutex) {
     pthread_mutex_lock(group_fileMutex);
 
-    char* filename = setupFileStringGroup(group); // one we are sending to
+    char* filename = setupFileStringGroup(group);
 
-    // this can definately be a function on its own
     FILE* fp = fopen(filename, "a");
-    fseek(fp, 0, SEEK_END);
-    fprintf(fp, "%s", username);
-    fprintf(fp, " : ");
-    fprintf(fp, "%s", message_to_send_group->arr);
-    fprintf(fp, "\n");
+    writeToFile(fp, username, message_to_send_group->arr);
     fclose(fp);
     free(filename);
 
@@ -322,17 +318,11 @@ void writeToFileGroup(recieved_message* message_to_send_group, char* group, char
 void writeToFileUser(recieved_message* message_to_send_user, char* threadUsername, char* recvUsername, pthread_mutex_t *user_fileMutex) {
     pthread_mutex_lock(user_fileMutex);
 
-    char* filename = setupFileStringUser(threadUsername, recvUsername); // one we are sending to
+    char* filename = setupFileStringUser(threadUsername, recvUsername);
     FILE* fp = fopen(filename, "a");
-    if(fp == NULL) {
-        free(filename);
-    }
+    if(fp == NULL) { free(filename); }
     else {
-        fseek(fp, 0, SEEK_END);
-        fprintf(fp, "%s", threadUsername);
-        fprintf(fp, ": ");
-        fprintf(fp, "%s", message_to_send_user->arr);
-        fprintf(fp, "\n");
+        writeToFile(fp, threadUsername, message_to_send_user->arr);
         fclose(fp);
         free(filename);
     }
@@ -342,22 +332,24 @@ void writeToFileUser(recieved_message* message_to_send_user, char* threadUsernam
         return;
     }
 
-    char* filename2 = setupFileStringUser(recvUsername, threadUsername); // one we are sending to
+    char* filename2 = setupFileStringUser(recvUsername, threadUsername);
     FILE* fp2 = fopen(filename2, "a");
-    if(fp2 == NULL) {
-        free(filename);
-    }
+    if(fp2 == NULL) { free(filename); }
     else {
-        fseek(fp2, 0, SEEK_END);
-        fprintf(fp2, "%s", threadUsername);
-        fprintf(fp2, ": ");
-        fprintf(fp2, "%s", message_to_send_user->arr);
-        fprintf(fp2, "\n");
+        writeToFile(fp2, threadUsername, message_to_send_user->arr);
         fclose(fp2);
         free(filename2);
     }
 
     pthread_mutex_unlock(user_fileMutex);
+}
+
+void writeToFile(FILE* fp, char* username, char* message) {
+    fseek(fp, 0, SEEK_END);
+    fprintf(fp, "%s", username);
+    fprintf(fp, ": ");
+    fprintf(fp, "%s", message);
+    fprintf(fp, "\n");
 }
 
 void sendList(user_map* t_map, int sockid, pthread_mutex_t* socket_mutex) {
@@ -598,7 +590,7 @@ void processFile(recievedFile* file, uint32_t file_size) {
     file->size_f_name = strlen(file->filename_to_send) + 1;
 }
 
-void saveFile(recievedFile* file, user* user) {
+void saveFileUser(recievedFile* file, user* user) {
     char* path = setupFileStringUserFile(user->username, file->user_to_send, file->filename_to_send);
     FILE* fp = fopen(path, "w");
     fwrite(file->arr, 1, file->size_m, fp);
@@ -617,21 +609,19 @@ void saveFileGroup(recievedFile* file) {
     free(path);
 }
 
-void sendFileUser(thread_arg* arg) {
-    recievedFile file;
-    file.arr = recvExactMsg(&file.size_m, arg->curr->sockid);
-    file.user_to_send = recvExactMsg(&file.size_u, arg->curr->sockid);
-    file.filename_to_send = recvExactMsg(&file.size_f_name, arg->curr->sockid);
-    saveFile(&file, arg->curr);
-    insertFile(arg->user_Files, arg->curr, file.filename_to_send);
-    sendFile(&file, arg);
-    freeFile(&file);
+recievedFile* recvFile(thread_arg* arg) {
+    recievedFile* file = malloc(sizeof(recievedFile));
+    file->arr = recvExactMsg(&file->size_m, arg->curr->sockid);
+    file->user_to_send = recvExactMsg(&file->size_u, arg->curr->sockid);
+    file->filename_to_send = recvExactMsg(&file->size_f_name, arg->curr->sockid);
+    return file;
 }
 
 void freeFile(recievedFile* file) {
     free(file->arr);
     free(file->filename_to_send);
     free(file->user_to_send);
+    free(file);
 }
 
 void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg) {
@@ -684,54 +674,45 @@ int getFileSize(FILE* fp) {
     return size;
 }
 
-// group & user are too similar, we can probably reuse them
-void downloadFileUser(thread_arg* threadArg) {
+void freeFileInfo(recieved_file_info* file_info) {
+    free(file_info->filename);
+    free(file_info->name);
+    free(file_info);
+}
+
+recieved_file_info* recvFileInfo(thread_arg* threadArg) {
+    recieved_file_info* file_info = malloc(sizeof(recieved_file_info));
+
     pthread_mutex_lock(threadArg->curr->user_mutex);
 
     uint32_t filename_size = 0;
     char* filename = recvExactMsg(&filename_size, threadArg->curr->sockid);
     filename[filename_size] = '\0';
 
-    uint32_t username_size = 0;
-    char* username = recvExactMsg(&username_size, threadArg->curr->sockid);
-    username[username_size] = '\0';
-
-    char path[128];
-    sprintf(path, "logs/files/%s/%s/%s", threadArg->curr->username, username, filename);
-    
-    FILE* fp = fopen(path, "r");
-    if(fp == NULL) {return;}
-
-    int size = getFileSize(fp);
-
-    char* file_data = malloc(size);
-
-    fread(file_data, 1, size, fp);
-
-    int type_of_message = FILE_DOWNLOAD_USER;
-    send(threadArg->curr->sockid, &type_of_message, sizeof(type_of_message), 0);
-    sendSize(size, threadArg->curr->sockid);
-    sendAll(file_data, threadArg->curr->sockid, size);
+    uint32_t name_size = 0;
+    char* name = recvExactMsg(&name_size, threadArg->curr->sockid);
+    name[name_size] = '\0';
 
     pthread_mutex_unlock(threadArg->curr->user_mutex);
 
-    fclose(fp);
-    free(filename);
+    file_info->filename = filename;
+    file_info->name = name;
+    file_info->filename_size = filename_size;
+    file_info->name_size = name_size;
+
+    return file_info;
 }
 
-void downloadFileGroup(thread_arg* threadArg) {
-    pthread_mutex_lock(threadArg->curr->user_mutex);
-
-    uint32_t filename_size = 0;
-    char* filename = recvExactMsg(&filename_size, threadArg->curr->sockid);
-    filename[filename_size] = '\0';
-
-    uint32_t group_name_size = 0;
-    char* group_name = recvExactMsg(&group_name_size, threadArg->curr->sockid);
-    group_name[group_name_size] = '\0';
+void downloadFile(thread_arg* threadArg, int constant) {
+    recieved_file_info* file_info = recvFileInfo(threadArg);
 
     char path[128];
-    sprintf(path, "logs/group_files/%s/%s", group_name, filename);
+    if(constant == FILE_DOWNLOAD_USER) {
+        sprintf(path, "logs/files/%s/%s/%s", threadArg->curr->username, file_info->name, file_info->filename);
+    }
+    else {
+        sprintf(path, "logs/group_files/%s/%s", file_info->name, file_info->filename);
+    }
     
     FILE* fp = fopen(path, "r");
     if(fp == NULL) {return;}
@@ -750,7 +731,7 @@ void downloadFileGroup(thread_arg* threadArg) {
     pthread_mutex_unlock(threadArg->curr->user_mutex);
 
     fclose(fp);
-    free(filename);
+    freeFileInfo(file_info);
 }
 
 
@@ -774,7 +755,7 @@ void *createConnection(void *arg) {
 
     while((n = recv(current_user_socket, &hdr, sizeof(hdr), 0)) > 0) {
 
-        enum Network type = ntohl(hdr);
+        Network type = ntohl(hdr);
 
         if(type == MSG_SEND) {
             sendMessageUser(current_user_socket, curr_user);
@@ -790,16 +771,23 @@ void *createConnection(void *arg) {
             roomMethodMessage(curr_user);
         }
         else if(type == FILE_SEND) {
-            sendFileUser(curr_user);
+            recievedFile* file = recvFile(curr_user);
+            saveFileUser(file, curr_user->curr);
+            insertFile(curr_user->user_Files, curr_user->curr, file->filename_to_send);
+            sendFile(file, curr_user);
+            freeFile(file);
         }
         else if(type == FILE_GROUP) {
-            sendFileGroup(curr_user);
+            recievedFile* file = recvFile(curr_user);
+            saveFileGroup(file);
+            sendFileGroupMethod(file, curr_user);
+            freeFile(file);
         }
         else if(type == FILE_DOWNLOAD_USER) {
-            downloadFileUser(curr_user);
+            downloadFile(curr_user, FILE_DOWNLOAD_USER);
         }
         else if(type == FILE_DOWNLOAD_GROUP) {
-            downloadFileGroup(curr_user);
+            downloadFile(curr_user, FILE_DOWNLOAD_GROUP);
         }
     }
 

@@ -36,15 +36,13 @@ char* setupFileStringGroup(char* group);
 char* setupFileStringGroupFile(char* group);
 void sendUserRemoval(thread_arg* threadArg);
 void sendFile(recievedFile* file, thread_arg* threadArg);
-void sendFileUser(thread_arg* arg);
+recievedFile* recvFile(thread_arg* arg);
 void processFile(recievedFile* file, uint32_t file_size);
 uint32_t recvSize(int sockid);
 void initFileDataStructure(recievedFile* file, uint32_t file_size);
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message);
-void saveFile(recievedFile* file, user* user);
+void saveFileUser(recievedFile* file, user* user);
 void saveFileGroup(recievedFile* file);
-void downloadFileUser(thread_arg* threadArg);
-void downloadFileGroup(thread_arg* threadArg);
 int getFileSize(FILE* fp);
 void sendFileGroup(thread_arg* arg);
 void sendFileGroupMethod(recievedFile* file, thread_arg* threadArg);
@@ -55,5 +53,8 @@ void sendUsername(char* username, int size, int sockid);
 char* setupFileStringUserFile(char *username, char* user_to_send, char* filename);
 void sendAllUserFiles(user* user);
 void sendAllGroupFiles(user* user);
+void downloadFile(thread_arg* threadArg, int constant);
+recieved_file_info* recvFileInfo(thread_arg* threadArg);
+void freeFileInfo(recieved_file_info* file_info);
 
 #endif /* THREAD_FUNCTIONS_H */
