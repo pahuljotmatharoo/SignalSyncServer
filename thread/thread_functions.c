@@ -703,6 +703,14 @@ recieved_file_info* recvFileInfo(thread_arg* threadArg) {
     return file_info;
 }
 
+void sendFileDownload(int size, char* file_data, int constant, int sockid) {
+    int type_of_message = constant;
+    send(sockid, &type_of_message, sizeof(type_of_message), 0);
+    sendSize(size, sockid);
+    sendAll(file_data, sockid, size);
+}
+
+
 void downloadFile(thread_arg* threadArg, int constant) {
     recieved_file_info* file_info = recvFileInfo(threadArg);
 
@@ -718,20 +726,18 @@ void downloadFile(thread_arg* threadArg, int constant) {
     if(fp == NULL) {return;}
 
     int size = getFileSize(fp);
-
     char* file_data = malloc(size);
 
-    fread(file_data, 1, size, fp);
+    fread(file_data, sizeof(char), size, fp);
 
-    int type_of_message = FILE_DOWNLOAD_GROUP;
-    send(threadArg->curr->sockid, &type_of_message, sizeof(type_of_message), 0);
-    sendSize(size, threadArg->curr->sockid);
-    sendAll(file_data, threadArg->curr->sockid, size);
+    fclose(fp);
+
+    sendFileDownload(size, file_data, constant, threadArg->curr->sockid);
 
     pthread_mutex_unlock(threadArg->curr->user_mutex);
 
-    fclose(fp);
     freeFileInfo(file_info);
+    free(file_data);
 }
 
 

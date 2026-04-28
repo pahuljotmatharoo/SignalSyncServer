@@ -56,5 +56,6 @@ void sendAllGroupFiles(user* user);
 void downloadFile(thread_arg* threadArg, int constant);
 recieved_file_info* recvFileInfo(thread_arg* threadArg);
 void freeFileInfo(recieved_file_info* file_info);
+void downloadFile(thread_arg* threadArg, int constant);
 
 #endif /* THREAD_FUNCTIONS_H */

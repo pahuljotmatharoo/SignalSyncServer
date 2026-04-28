@@ -182,6 +182,7 @@ user_files* initUserFilesMap() {
     for(int i = 0; i < MAXUSERS; i++) {
         files_map->m_files[i] = NULL;
     }
+    return files_map;
 }
 
 void insertFile(user_files* t_map, user* client, char* file) {
