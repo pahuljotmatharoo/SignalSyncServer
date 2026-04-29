@@ -22,6 +22,13 @@ typedef struct {
     uint32_t size_f_name;
 } recievedFile;
 
+typedef struct {
+    char* filename;
+    char* name;
+    uint32_t filename_size;
+    uint32_t name_size;
+} recieved_file_info;
+
 typedef struct list {
     uint32_t size;
     char arr[max_users][USERNAME_LENGTH];
