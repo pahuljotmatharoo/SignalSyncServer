@@ -224,22 +224,21 @@ void sendAllGroupMessages(user *new_user) {
 
         snprintf(group_name, sizeof(group_name), "Group %zu", i);
 
-        int group_name_length = htonl(strlen(group_name) + 1);
+        int group_name_length = strlen(group_name) + 1;
 
         while (fgets(buf, sizeof(buf), fp)) { // each line
             char** string_split = parseFileString(buf);
 
             recieved_message recvMsg = {0};
             recvMsg.arr = string_split[1];
-            recvMsg.size_m = htonl(strlen(string_split[1]) + 1);
+            recvMsg.size_m = strlen(string_split[1]) + 1;
             recvMsg.user_to_send = string_split[0];
-            recvMsg.size_u = htonl(strlen(string_split[0]) + 1);
+            recvMsg.size_u = strlen(string_split[0]) + 1;
 
             pthread_mutex_lock(new_user->user_mutex);
 
             sendMessage(&recvMsg, new_user->sockid, type_of_message);
-            send(new_user->sockid, &group_name_length, sizeof(int), 0);
-            send(new_user->sockid, group_name, ntohl(group_name_length), 0); // this is send full dir & not group name
+            sendUsername(group_name, group_name_length, new_user->sockid);
 
             pthread_mutex_unlock(new_user->user_mutex);
 
@@ -261,6 +260,7 @@ char* recvExactMsg(uint32_t* len, int sock) {
 		if (r == 0)  return 0;
 		total += r;
 	}
+    buf[length] = '\0';
 	return buf;
 }
 
@@ -416,6 +416,13 @@ void sendChatroomList(ChatRoomList* chatroom_list, int sockid, pthread_mutex_t* 
     pthread_mutex_unlock(socket_mutex);
 }
 
+void initalizeGroupUsername(recieved_message* recievedMessage, char* username) {
+    recievedMessage->user_to_send = malloc(strlen(username) + 2);
+    memcpy(recievedMessage->user_to_send, username, strlen(username));
+    recievedMessage->user_to_send[strlen(username) + 1] = '\0';
+    recievedMessage->size_u = strlen(username) + 1;
+}
+
 void roomMethodMessage(thread_arg* curr_user) {
     recieved_message recievedMessage = {0};
 
@@ -423,21 +430,10 @@ void roomMethodMessage(thread_arg* curr_user) {
 
     uint32_t group_size = 0;
     char* group = recvExactMsg(&group_size , curr_user->curr->sockid);
-    group[group_size] = '\0';
 
-    //maybe a function?
-    recievedMessage.user_to_send = malloc(strlen(curr_user->curr->username) + 2);
-    memcpy(recievedMessage.user_to_send, curr_user->curr->username, strlen(curr_user->curr->username));
-    recievedMessage.user_to_send[strlen(curr_user->curr->username) + 1] = '\0';
-    recievedMessage.size_u = strlen(curr_user->curr->username) + 1;
+    initalizeGroupUsername(&recievedMessage, curr_user->curr->username);
 
     user_map* t_map = curr_user->user_Map;
-
-    int group_length = htonl(strlen(group) + 1);
-
-    //we should not have to do this
-    recievedMessage.size_m = htonl(recievedMessage.size_m);
-    recievedMessage.size_u = htonl(recievedMessage.size_u);
 
     pthread_mutex_lock(curr_user->mutex);
     for(size_t i = 0; i < MAXUSERS; i++) {
@@ -447,8 +443,7 @@ void roomMethodMessage(thread_arg* curr_user) {
 
         pthread_mutex_lock(t_map->m_userArr[i]->user_mutex);
         sendMessage(&recievedMessage, t_map->m_userArr[i]->sockid, ROOM_MSG);
-        send(t_map->m_userArr[i]->sockid, &group_length, sizeof(int), 0);
-        send(t_map->m_userArr[i]->sockid, group, ntohl(group_length), 0);
+        sendUsername(group, group_size, t_map->m_userArr[i]->sockid);
         pthread_mutex_unlock(t_map->m_userArr[i]->user_mutex);
     }
     pthread_mutex_unlock(curr_user->mutex);
@@ -477,12 +472,10 @@ void roomMethodCreation(thread_arg* curr_user, int type_of_message, void* data, 
     pthread_mutex_unlock(curr_user->mutex);
 }
 
-//username is the user who is sending message
 void sendMessageUser(int current_user_socket, thread_arg* threadArg) {
     recieved_message recievedMessage;
 
     recievedMessage.arr = recvExactMsg(&recievedMessage.size_m, current_user_socket);
-    
     recievedMessage.user_to_send = recvExactMsg(&recievedMessage.size_u, current_user_socket);
 
     writeToFileUser(&recievedMessage, threadArg->curr->username, recievedMessage.user_to_send, threadArg->user_fileMutex);
@@ -497,16 +490,12 @@ void sendMessageUser(int current_user_socket, thread_arg* threadArg) {
     }
 
     strncpy(recievedMessage.user_to_send, threadArg->curr->username, strlen(threadArg->curr->username) + 1);
-    recievedMessage.size_m = htonl(recievedMessage.size_m + 1);
-    recievedMessage.size_u = htonl(recievedMessage.size_u + 1);
 
     pthread_mutex_lock(info.mutex);
     sendMessage(&recievedMessage, info.sockid, MSG_SEND);
     pthread_mutex_unlock(info.mutex);
 
     freeRecievedMessage(&recievedMessage);
-
-    printf("Sent to the new client\n");
 }
 
 void freeRecievedMessage(recieved_message* recievedMessage) {
@@ -515,6 +504,9 @@ void freeRecievedMessage(recieved_message* recievedMessage) {
 }
 
 void sendMessage(recieved_message* message_struct, int socket_id, int type_of_message) {
+    message_struct->size_m = htonl(message_struct->size_m + 1);
+    message_struct->size_u = htonl(message_struct->size_u + 1);
+
     send(socket_id, &type_of_message, sizeof(type_of_message), 0);
     send(socket_id, &(message_struct->size_m), sizeof(uint32_t), 0);
     send(socket_id, (message_struct->arr), ntohl(message_struct->size_m), 0);
@@ -687,11 +679,9 @@ recieved_file_info* recvFileInfo(thread_arg* threadArg) {
 
     uint32_t filename_size = 0;
     char* filename = recvExactMsg(&filename_size, threadArg->curr->sockid);
-    filename[filename_size] = '\0';
 
     uint32_t name_size = 0;
     char* name = recvExactMsg(&name_size, threadArg->curr->sockid);
-    name[name_size] = '\0';
 
     pthread_mutex_unlock(threadArg->curr->user_mutex);
 
