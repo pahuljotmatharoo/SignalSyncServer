@@ -54,6 +54,7 @@ typedef enum {
 #define FILE_DOWNLOAD_USER 11
 #define USER_CHATS 12
 #define FILE_DOWNLOAD_GROUP 13
+#define READ_MSG 14
 #define USERNAME_LENGTH 50
 #define message_length 128
 
@@ -730,6 +731,18 @@ void downloadFile(thread_arg* threadArg, int constant) {
     free(file_data);
 }
 
+void processRead(thread_arg* threadArg) {
+    int size = 0;
+    char* username_that_was_read = recvExactMsg(&size, threadArg->curr->sockid);
+
+    pthread_mutex_lock(threadArg->mutex);
+    user_info info = findUser(threadArg->user_Map, username_that_was_read);
+    pthread_mutex_unlock(threadArg->mutex);
+
+    int type_of_message = READ_MSG;
+    send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
+    sendUsername(threadArg->curr->username, threadArg->curr->username_length, info.sockid);
+}
 
 void *createConnection(void *arg) {
     int n;
@@ -784,6 +797,9 @@ void *createConnection(void *arg) {
         }
         else if(type == FILE_DOWNLOAD_GROUP) {
             downloadFile(curr_user, FILE_DOWNLOAD_GROUP);
+        }
+        else if(type == READ_MSG) {
+            processRead(curr_user);
         }
     }
 

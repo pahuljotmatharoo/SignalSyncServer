@@ -65,6 +65,7 @@ void main_function() {
     while (1) {
         struct sockaddr_in client;
         socklen_t client_len = sizeof(client);
+        printf("raccepting! \n");
         int new_sock = accept(sock, (struct sockaddr*)&client, &client_len);
 
         if (new_sock < 0) { continue; }
@@ -91,6 +92,8 @@ void main_function() {
 
 int main() {
     atexit(cleanup);
+
+    printf("running! \n");
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
