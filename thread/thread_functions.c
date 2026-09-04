@@ -742,6 +742,7 @@ void processRead(thread_arg* threadArg) {
     int type_of_message = READ_MSG;
     send(info.sockid, &type_of_message, sizeof(type_of_message), 0);
     sendUsername(threadArg->curr->username, threadArg->curr->username_length, info.sockid);
+    free(username_that_was_read);
 }
 
 void *createConnection(void *arg) {
